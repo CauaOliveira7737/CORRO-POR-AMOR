@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "Corro por Amor",
+    "slug": "corro-por-amor",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#012A4A"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "O Corro por Amor precisa da sua localização GPS para registrar a distância, ritmo e percurso das suas corridas.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "O Corro por Amor registra a sua corrida com precisão em segundo plano mesmo com o celular no bolso ou tela bloqueada.",
+        "UIBackgroundModes": [
+          "location"
+        ]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#012A4A"
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-sharing",
+      "expo-web-browser"
+    ]
+  }
+}

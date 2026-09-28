@@ -1,0 +1,30 @@
+{
+  "name": "corro-por-amor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Corro por Amor — Aplicativo e Plataforma de Desafios Virtuais de Corrida",
+  "workspaces": [
+    "shared",
+    "mobile",
+    "admin"
+  ],
+  "scripts": {
+    "start:mobile": "npm run --workspace=mobile start",
+    "dev:admin": "npm run --workspace=admin dev",
+    "build:admin": "npm run --workspace=admin build",
+    "build:shared": "npm run --workspace=shared typecheck"
+  },
+  "keywords": [
+    "running",
+    "virtual-challenges",
+    "expo",
+    "react-native",
+    "supabase",
+    "vite"
+  ],
+  "author": "Corro por Amor",
+  "license": "MIT",
+  "dependencies": {
+    "expo-dev-client": "~57.0.19"
+  }
+}
