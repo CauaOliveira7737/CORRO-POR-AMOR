@@ -9,6 +9,7 @@
     "admin"
   ],
   "scripts": {
+    "eas-build-pre-install": "npm config set legacy-peer-deps true",
     "start:mobile": "npm run --workspace=mobile start",
     "dev:admin": "npm run --workspace=admin dev",
     "build:admin": "npm run --workspace=admin build",
@@ -23,8 +24,5 @@
     "vite"
   ],
   "author": "Corro por Amor",
-  "license": "MIT",
-  "dependencies": {
-    "expo-dev-client": "~57.0.19"
-  }
+  "license": "MIT"
 }

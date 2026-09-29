@@ -11,9 +11,17 @@
       "resizeMode": "contain",
       "backgroundColor": "#012A4A"
     },
+    "owner": "cau4",
+    "extra": {
+      "eas": {
+        "projectId": "dbd09472-cd0b-495a-8de2-5f6792d636d7"
+      }
+    },
     "ios": {
       "supportsTablet": false,
+      "bundleIdentifier": "com.cau4.corroporamor",
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "O Corro por Amor precisa da sua localização GPS para registrar a distância, ritmo e percurso das suas corridas.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "O Corro por Amor registra a sua corrida com precisão em segundo plano mesmo com o celular no bolso ou tela bloqueada.",
         "UIBackgroundModes": [
@@ -22,6 +30,7 @@
       }
     },
     "android": {
+      "package": "com.cau4.corroporamor",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#012A4A"

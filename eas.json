@@ -1,0 +1,22 @@
+{
+  "cli": {
+    "version": ">= 24.8.0",
+    "appVersionSource": "remote",
+    "appDir": "mobile"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal"
+    },
+    "production": {
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
