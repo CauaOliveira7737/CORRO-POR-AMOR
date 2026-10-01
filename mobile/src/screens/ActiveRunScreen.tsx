@@ -116,15 +116,8 @@ export const ActiveRunScreen: React.FC<ActiveRunScreenProps> = ({
           showsMyLocationButton={false}
           showsCompass={true}
           toolbarEnabled={false}
-          mapType={Platform.OS === 'android' ? 'none' : 'standard'}
+          mapType="standard"
         >
-          {/* High-speed CartoDB Voyager tiles: 100% reliable street map on Android & iOS without Google Cloud API key restrictions */}
-          <UrlTile
-            urlTemplate="https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
-            maximumZ={19}
-            flipY={false}
-            zIndex={-1}
-          />
 
           {/* Real-time Route Polyline in Energetic Orange */}
           {tracker.routePoints.length > 1 && (
@@ -134,6 +127,7 @@ export const ActiveRunScreen: React.FC<ActiveRunScreenProps> = ({
               strokeWidth={5}
               lineCap="round"
               lineJoin="round"
+              zIndex={10}
             />
           )}
 
@@ -146,6 +140,7 @@ export const ActiveRunScreen: React.FC<ActiveRunScreenProps> = ({
               }}
               title="Ponto de Partida"
               anchor={{ x: 0.5, y: 0.5 }}
+              zIndex={20}
             >
               <View style={styles.startMarker}>
                 <View style={styles.startMarkerInner} />
@@ -163,6 +158,7 @@ export const ActiveRunScreen: React.FC<ActiveRunScreenProps> = ({
               title="Sua Posição"
               anchor={{ x: 0.5, y: 0.5 }}
               flat
+              zIndex={30}
             >
               <View style={styles.runnerMarkerOuter}>
                 <View style={styles.runnerMarkerPulse} />

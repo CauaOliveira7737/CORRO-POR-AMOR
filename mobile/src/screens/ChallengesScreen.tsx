@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image } from 'react-native';
 import { Trophy, CheckCircle, Calendar, ArrowRight, Award, Flame, Users } from 'lucide-react-native';
 import { theme } from '../theme';
 import { ProgressBar } from '../components/ProgressBar';
@@ -124,6 +124,14 @@ export const ChallengesScreen: React.FC<ChallengesScreenProps> = ({
                 style={styles.challengeCard}
                 activeOpacity={0.88}
               >
+                {ch.image_url ? (
+                  <Image
+                    source={{ uri: ch.image_url }}
+                    style={styles.cardImageBanner}
+                    resizeMode="cover"
+                  />
+                ) : null}
+
                 {/* Top Badge Row */}
                 <View style={styles.cardTopRow}>
                   <View style={styles.distanceBadge}>
@@ -265,6 +273,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.borderLight,
     gap: 12,
+  },
+  cardImageBanner: {
+    width: '100%',
+    height: 140,
+    borderRadius: theme.radius.lg,
   },
   cardTopRow: {
     flexDirection: 'row',

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Play, BarChart2, Award, Calendar, Users, Target, ShieldCheck, Flame, CheckCircle2, Check } from 'lucide-react-native';
 import { theme } from '../theme';
@@ -67,6 +67,13 @@ export const ChallengeDetailScreen: React.FC<ChallengeDetailScreenProps> = ({
       >
         {/* Challenge Hero Header Card */}
         <View style={styles.heroCard}>
+          {challenge.image_url ? (
+            <Image
+              source={{ uri: challenge.image_url }}
+              style={styles.heroBannerImage}
+              resizeMode="cover"
+            />
+          ) : null}
           <View style={styles.periodPill}>
             <Calendar size={12} color="#0284C7" strokeWidth={2.2} />
             <Text style={styles.periodText}>
@@ -307,6 +314,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.borderLight,
     gap: 12,
+  },
+  heroBannerImage: {
+    width: '100%',
+    height: 160,
+    borderRadius: theme.radius.lg,
   },
   periodPill: {
     flexDirection: 'row',

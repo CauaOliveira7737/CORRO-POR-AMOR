@@ -8,7 +8,7 @@ import { ValidationView } from './pages/ValidationView';
 import { MedalsView } from './pages/MedalsView';
 import { supabase } from './api/supabase';
 import { Challenge, ChallengeParticipant, Activity, Medal, Certificate } from '@corro-por-amor/shared';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Loader2, RefreshCw, Trash2 } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<AdminTab>('dashboard');
@@ -22,6 +22,8 @@ export const App: React.FC = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingChallenge, setEditingChallenge] = useState<Challenge | null>(null);
+  const [challengeToDelete, setChallengeToDelete] = useState<Challenge | null>(null);
+  const [isDeletingChallenge, setIsDeletingChallenge] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -124,6 +126,38 @@ export const App: React.FC = () => {
       if (error) throw error;
     }
     await fetchData();
+  };
+
+  // Delete Challenge prompt
+  const handleDeleteChallenge = async (challengeId: string) => {
+    const ch = challenges.find((c) => c.id === challengeId);
+    if (ch) {
+      setChallengeToDelete(ch);
+    }
+  };
+
+  const confirmDeleteChallenge = async () => {
+    if (!challengeToDelete) return;
+    setIsDeletingChallenge(true);
+
+    try {
+      const { error } = await supabase
+        .from('challenges')
+        .delete()
+        .eq('id', challengeToDelete.id);
+
+      if (error) throw error;
+      if (editingChallenge?.id === challengeToDelete.id) {
+        setIsModalOpen(false);
+        setEditingChallenge(null);
+      }
+      setChallengeToDelete(null);
+      await fetchData();
+    } catch (err: any) {
+      alert('Erro ao excluir desafio: ' + err.message);
+    } finally {
+      setIsDeletingChallenge(false);
+    }
   };
 
   // Activity Moderation (Approve)
@@ -235,6 +269,7 @@ export const App: React.FC = () => {
                   setEditingChallenge(ch);
                   setIsModalOpen(true);
                 }}
+                onDeleteChallenge={handleDeleteChallenge}
               />
             )}
 
@@ -270,7 +305,74 @@ export const App: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveChallenge}
         editingChallenge={editingChallenge}
+        onDelete={handleDeleteChallenge}
       />
+
+      {/* Modern In-App Delete Confirmation Modal */}
+      {challengeToDelete && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.75)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '16px',
+        }}>
+          <div className="card" style={{ maxWidth: '440px', width: '100%', padding: '24px', backgroundColor: 'var(--color-surface, #FFFFFF)', borderRadius: '16px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
+              <div style={{ width: '44px', height: '44px', borderRadius: '22px', backgroundColor: 'rgba(239, 68, 68, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#DC2626' }}>
+                <Trash2 size={22} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--color-primary-dark)' }}>Excluir Desafio</h3>
+                <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>Ação definitiva e imediata</p>
+              </div>
+            </div>
+
+            <p style={{ fontSize: '14px', color: 'var(--color-text-body)', lineHeight: 1.5, marginBottom: '24px' }}>
+              Tem certeza que deseja excluir permanentemente o desafio <strong>"{challengeToDelete.name}"</strong>? Ele será removido do aplicativo e do ranking.
+            </p>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setChallengeToDelete(null)}
+                disabled={isDeletingChallenge}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                style={{
+                  backgroundColor: '#DC2626',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: 'var(--radius-md, 8px)',
+                  padding: '9px 18px',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  cursor: isDeletingChallenge ? 'not-allowed' : 'pointer',
+                  opacity: isDeletingChallenge ? 0.7 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+                onClick={confirmDeleteChallenge}
+                disabled={isDeletingChallenge}
+              >
+                <Trash2 size={15} />
+                <span>{isDeletingChallenge ? 'Excluindo...' : 'Sim, Excluir'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

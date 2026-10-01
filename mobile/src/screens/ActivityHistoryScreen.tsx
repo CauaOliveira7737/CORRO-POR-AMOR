@@ -18,9 +18,29 @@ import {
   Sparkles
 } from 'lucide-react-native';
 import { theme } from '../theme';
-import { Activity } from '@corro-por-amor/shared';
+import { Activity, RunPoint } from '@corro-por-amor/shared';
 import { RunPhotoShareModal } from '../components/RunPhotoShareModal';
 import { ActivityDetailModal } from '../components/ActivityDetailModal';
+
+const extractRouteCoordinates = (geojson: any): RunPoint[] => {
+  if (!geojson) return [];
+  if (Array.isArray(geojson.points)) return geojson.points;
+  if (Array.isArray(geojson.coordinates)) {
+    const coords = geojson.coordinates;
+    if (coords.length > 0 && typeof coords[0] === 'object' && 'latitude' in coords[0]) {
+      return coords;
+    }
+    return coords.map((c: any) => ({
+      latitude: c[1] || c.lat || 0,
+      longitude: c[0] || c.lng || 0,
+      altitude: 0,
+      speed: 0,
+      timestamp: Date.now(),
+    }));
+  }
+  if (Array.isArray(geojson)) return geojson;
+  return [];
+};
 
 interface ActivityHistoryScreenProps {
   activities: Activity[];
@@ -222,7 +242,7 @@ export const ActivityHistoryScreen: React.FC<ActivityHistoryScreenProps> = ({
           movingSeconds={selectedShareActivity.moving_seconds}
           averagePace={selectedShareActivity.average_pace}
           calories={Math.round(selectedShareActivity.distance_km * 65)}
-          routeCoordinates={selectedShareActivity.route_geojson?.points || []}
+          routeCoordinates={extractRouteCoordinates(selectedShareActivity.route_geojson)}
           initialPhotoUri={selectedShareActivity.photo_url || null}
           onSavePhoto={async (photoUri) => {
             if (onSavePhoto && selectedShareActivity) {

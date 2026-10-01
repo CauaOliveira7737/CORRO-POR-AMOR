@@ -282,6 +282,11 @@ function MainApp() {
     // Validate physical limits (Anti-cheat)
     const validation = validateRunPhysicalLimits(distance, movingSecs, tracker.routePoints);
     const xpBase = activeChallenge ? activeChallenge.xp_activity : 10;
+    const routePayload = tracker.routePoints.length > 0 ? {
+      type: 'LineString',
+      coordinates: tracker.routePoints.map((p) => [p.longitude, p.latitude]),
+      points: tracker.routePoints,
+    } : null;
 
     let savedLocally = false;
 
@@ -301,7 +306,7 @@ function MainApp() {
           status: validation.status,
           rejection_reason: validation.reason || null,
           xp_earned: xpBase,
-          route_geojson: tracker.routePoints.length > 0 ? { coordinates: tracker.routePoints } : null,
+          route_geojson: routePayload,
           created_at: new Date().toISOString(),
         };
         await offlineStorage.savePendingActivity(offlineAct);
@@ -346,7 +351,7 @@ function MainApp() {
               status: validation.status,
               rejection_reason: validation.reason || null,
               xp_earned: xpBase,
-              route_geojson: tracker.routePoints.length > 0 ? { coordinates: tracker.routePoints } : null,
+              route_geojson: routePayload,
             },
           ]).select('id').single();
 
@@ -369,7 +374,7 @@ function MainApp() {
             status: validation.status,
             rejection_reason: validation.reason || null,
             xp_earned: xpBase,
-            route_geojson: tracker.routePoints.length > 0 ? { coordinates: tracker.routePoints } : null,
+            route_geojson: routePayload,
             created_at: new Date().toISOString(),
           };
           createdActivityId = offlineAct.id;

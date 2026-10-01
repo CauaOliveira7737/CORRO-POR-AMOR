@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
-import { X, Trophy, Calendar, CheckSquare, Award } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { X, Trophy, Calendar, CheckSquare, Award, Trash2, UploadCloud, Loader2, Image as ImageIcon } from 'lucide-react';
 import { Challenge } from '@corro-por-amor/shared';
+import { supabase } from '../api/supabase';
 
 interface ChallengeModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (challengeData: Partial<Challenge>) => Promise<void>;
   editingChallenge?: Challenge | null;
+  onDelete?: (challengeId: string) => Promise<void>;
 }
 
 export const ChallengeModal: React.FC<ChallengeModalProps> = ({
@@ -14,12 +16,15 @@ export const ChallengeModal: React.FC<ChallengeModalProps> = ({
   onClose,
   onSave,
   editingChallenge,
+  onDelete,
 }) => {
   if (!isOpen) return null;
 
   const [name, setName] = useState(editingChallenge?.name || '');
   const [description, setDescription] = useState(editingChallenge?.description || '');
   const [imageUrl, setImageUrl] = useState(editingChallenge?.image_url || '');
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [startDate, setStartDate] = useState(editingChallenge?.start_date || new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(editingChallenge?.end_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
   
@@ -43,6 +48,54 @@ export const ChallengeModal: React.FC<ChallengeModalProps> = ({
   const [xpFirstPlace, setXpFirstPlace] = useState(editingChallenge?.xp_first_place ? editingChallenge.xp_first_place.toString() : '50');
 
   const [saving, setSaving] = useState(false);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor, selecione um arquivo de imagem válido (JPG, PNG, WEBP).');
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      alert('A imagem deve ter no máximo 8MB.');
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const fileExt = file.name.split('.').pop() || 'jpg';
+      const fileName = `challenge-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('challenge-images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrlData } = supabase.storage
+        .from('challenge-images')
+        .getPublicUrl(filePath);
+
+      if (publicUrlData?.publicUrl) {
+        setImageUrl(publicUrlData.publicUrl);
+      }
+    } catch (err: any) {
+      console.error('Error uploading challenge image:', err);
+      alert('Erro ao fazer upload da imagem: ' + (err.message || 'Tente novamente.'));
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   const togglePreset = (km: number) => {
     if (distanceOptions.includes(km)) {
@@ -169,6 +222,151 @@ export const ChallengeModal: React.FC<ChallengeModalProps> = ({
               placeholder="Ex: Desafio dos Ventos"
               style={{ width: '100%' }}
             />
+          </div>
+
+          {/* Challenge Banner Image Upload */}
+          <div>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--color-primary-dark)', marginBottom: '6px' }}>
+              Imagem de Capa do Desafio
+            </label>
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              accept="image/*"
+              style={{ display: 'none' }}
+            />
+
+            {imageUrl ? (
+              <div style={{
+                position: 'relative',
+                width: '100%',
+                height: '180px',
+                borderRadius: 'var(--radius-md)',
+                overflow: 'hidden',
+                border: '1px solid var(--color-border)',
+                backgroundColor: '#0F172A',
+              }}>
+                <img
+                  src={imageUrl}
+                  alt="Capa do Desafio"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+                <div style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  padding: '12px 16px',
+                  background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#FFFFFF' }}>
+                    <ImageIcon size={14} />
+                    <span style={{ fontSize: '12px', fontWeight: 600 }}>Capa salva</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                      style={{
+                        backgroundColor: 'rgba(255,255,255,0.92)',
+                        color: 'var(--color-primary-dark)',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '6px 12px',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                      }}
+                    >
+                      <UploadCloud size={14} />
+                      <span>{isUploading ? 'Enviando...' : 'Trocar Foto'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setImageUrl('')}
+                      disabled={isUploading}
+                      style={{
+                        backgroundColor: 'rgba(239, 68, 68, 0.9)',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '6px 10px',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
+                    >
+                      <X size={14} />
+                      <span>Remover</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div
+                onClick={() => !isUploading && fileInputRef.current?.click()}
+                style={{
+                  border: '2px dashed var(--color-border)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '28px 20px',
+                  textAlign: 'center',
+                  backgroundColor: 'var(--color-surface)',
+                  cursor: isUploading ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--color-brand-blue)')}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--color-border)')}
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 size={32} className="spin" color="var(--color-brand-blue)" />
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-brand-blue)' }}>
+                      Enviando imagem para o servidor...
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <div style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '22px',
+                      backgroundColor: 'rgba(1, 79, 134, 0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'var(--color-brand-blue)',
+                    }}>
+                      <UploadCloud size={22} />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-primary-dark)' }}>
+                        Clique para enviar a imagem do desafio
+                      </span>
+                      <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '3px' }}>
+                        Formatos aceitos: JPG, PNG, WEBP (Recomendado proporção 16:9 / 800x450)
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           <div>
@@ -444,18 +642,47 @@ export const ChallengeModal: React.FC<ChallengeModalProps> = ({
           {/* Actions */}
           <div style={{
             display: 'flex',
-            justifyContent: 'flex-end',
+            justifyContent: editingChallenge && onDelete ? 'space-between' : 'flex-end',
+            alignItems: 'center',
             gap: '12px',
             marginTop: '8px',
             paddingTop: '16px',
             borderTop: '1px solid var(--color-border-subtle)',
           }}>
-            <button type="button" onClick={onClose} className="btn-secondary">
-              Cancelar
-            </button>
-            <button type="submit" disabled={saving} className="btn-primary">
-              {saving ? 'Salvando...' : (editingChallenge ? 'Atualizar Desafio' : 'Publicar Desafio')}
-            </button>
+            {editingChallenge && onDelete && (
+              <button
+                type="button"
+                onClick={() => onDelete(editingChallenge.id)}
+                style={{
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                  color: '#DC2626',
+                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                  borderRadius: 'var(--radius-md, 8px)',
+                  padding: '9px 14px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.2)')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)')}
+              >
+                <Trash2 size={15} />
+                <span>Excluir Desafio</span>
+              </button>
+            )}
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button type="button" onClick={onClose} className="btn-secondary">
+                Cancelar
+              </button>
+              <button type="submit" disabled={saving} className="btn-primary">
+                {saving ? 'Salvando...' : (editingChallenge ? 'Atualizar Desafio' : 'Publicar Desafio')}
+              </button>
+            </div>
           </div>
         </form>
       </div>

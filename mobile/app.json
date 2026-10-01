@@ -33,7 +33,7 @@
       "package": "com.cau4.corroporamor",
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyD-DEV-PLACEHOLDER-KEY-CORROPRAMOR"
+          "apiKey": "AIzaSyCvJk4nhuzk-hMWGjcF6Tu1lsfHhzHUnv0"
         }
       },
       "adaptiveIcon": {
@@ -57,7 +57,7 @@
       [
         "react-native-maps",
         {
-          "androidGoogleMapsApiKey": "AIzaSyD-DEV-PLACEHOLDER-KEY-CORROPRAMOR"
+          "androidGoogleMapsApiKey": "AIzaSyCvJk4nhuzk-hMWGjcF6Tu1lsfHhzHUnv0"
         }
       ]
     ]

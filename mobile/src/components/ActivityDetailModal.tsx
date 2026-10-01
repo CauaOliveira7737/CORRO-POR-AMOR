@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -30,7 +30,8 @@ import {
   Sparkles,
   ExternalLink,
   ChevronRight,
-  Maximize2
+  Maximize2,
+  Flag
 } from 'lucide-react-native';
 import { theme } from '../theme';
 import { Activity, RunPoint, formatDuration, calculateAverageSpeedKmh } from '@corro-por-amor/shared';
@@ -116,12 +117,48 @@ export const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({
   const avgSpeed = calculateAverageSpeedKmh(activity.distance_km, activity.moving_seconds);
   const estimatedCalories = Math.round(activity.distance_km * 68);
 
-  const initialRegion = {
-    latitude: routePoints.length > 0 ? routePoints[0].latitude : -15.7975,
-    longitude: routePoints.length > 0 ? routePoints[0].longitude : -47.8919,
-    latitudeDelta: 0.015,
-    longitudeDelta: 0.015,
-  };
+  const initialRegion = useMemo(() => {
+    if (routePoints.length === 0) {
+      return {
+        latitude: -15.7975,
+        longitude: -47.8919,
+        latitudeDelta: 0.015,
+        longitudeDelta: 0.015,
+      };
+    }
+    let minLat = routePoints[0].latitude;
+    let maxLat = routePoints[0].latitude;
+    let minLng = routePoints[0].longitude;
+    let maxLng = routePoints[0].longitude;
+    for (const pt of routePoints) {
+      if (pt.latitude < minLat) minLat = pt.latitude;
+      if (pt.latitude > maxLat) maxLat = pt.latitude;
+      if (pt.longitude < minLng) minLng = pt.longitude;
+      if (pt.longitude > maxLng) maxLng = pt.longitude;
+    }
+    const centerLat = (minLat + maxLat) / 2;
+    const centerLng = (minLng + maxLng) / 2;
+    const latDelta = Math.max((maxLat - minLat) * 1.4, 0.005);
+    const lngDelta = Math.max((maxLng - minLng) * 1.4, 0.005);
+    return {
+      latitude: centerLat,
+      longitude: centerLng,
+      latitudeDelta: latDelta,
+      longitudeDelta: lngDelta,
+    };
+  }, [routePoints]);
+
+  useEffect(() => {
+    if (routePoints.length > 1 && mapRef.current) {
+      const timer = setTimeout(() => {
+        mapRef.current?.fitToCoordinates(routePoints, {
+          edgePadding: { top: 35, right: 35, bottom: 35, left: 35 },
+          animated: false,
+        });
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [routePoints]);
 
   // Handle Photo Picker
   const handlePickPhoto = async () => {
@@ -319,18 +356,12 @@ export const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({
                   ref={mapRef}
                   style={StyleSheet.absoluteFill}
                   initialRegion={initialRegion}
-                  mapType={Platform.OS === 'android' ? 'none' : 'standard'}
+                  mapType="standard"
                   scrollEnabled={false}
                   zoomEnabled={true}
                   pitchEnabled={false}
                   rotateEnabled={false}
                 >
-                  <UrlTile
-                    urlTemplate="https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
-                    maximumZ={19}
-                    flipY={false}
-                    zIndex={-1}
-                  />
 
                   <Polyline
                     coordinates={routePoints}
@@ -338,6 +369,7 @@ export const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({
                     strokeWidth={5}
                     lineCap="round"
                     lineJoin="round"
+                    zIndex={10}
                   />
 
                   {/* Start Point */}
@@ -346,10 +378,13 @@ export const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({
                       latitude: routePoints[0].latitude,
                       longitude: routePoints[0].longitude,
                     }}
-                    title="Partida"
+                    title="Ponto de Partida"
                     anchor={{ x: 0.5, y: 0.5 }}
+                    zIndex={20}
                   >
-                    <View style={styles.mapStartDot} />
+                    <View style={styles.mapStartMarker}>
+                      <View style={styles.mapStartMarkerInner} />
+                    </View>
                   </Marker>
 
                   {/* Finish Point */}
@@ -358,10 +393,13 @@ export const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({
                       latitude: routePoints[routePoints.length - 1].latitude,
                       longitude: routePoints[routePoints.length - 1].longitude,
                     }}
-                    title="Chegada"
+                    title="Ponto de Chegada"
                     anchor={{ x: 0.5, y: 0.5 }}
+                    zIndex={25}
                   >
-                    <View style={styles.mapFinishDot} />
+                    <View style={styles.mapFinishMarker}>
+                      <Flag size={11} color="#FFFFFF" strokeWidth={2.4} />
+                    </View>
                   </Marker>
                 </MapView>
               ) : (
@@ -879,5 +917,36 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#EF4444',
+  },
+  mapStartMarker: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(16, 185, 129, 0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mapStartMarkerInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#10B981',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  mapFinishMarker: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#EF4444',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
   },
 });

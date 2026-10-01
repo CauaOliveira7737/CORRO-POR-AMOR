@@ -6,6 +6,7 @@ import {
   Target, 
   Award, 
   Edit3, 
+  Trash2,
   CheckCircle,
   ExternalLink
 } from 'lucide-react';
@@ -16,6 +17,7 @@ interface ChallengesViewProps {
   participants: ChallengeParticipant[];
   onOpenCreateModal: () => void;
   onEditChallenge: (challenge: Challenge) => void;
+  onDeleteChallenge?: (challengeId: string) => void;
 }
 
 export const ChallengesView: React.FC<ChallengesViewProps> = ({
@@ -23,6 +25,7 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
   participants,
   onOpenCreateModal,
   onEditChallenge,
+  onDeleteChallenge,
 }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -51,19 +54,70 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({
           const finishers = enrolled.filter((p) => p.completion_percentage >= 100);
 
           return (
-            <div key={c.id} className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div key={c.id} className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', overflow: 'hidden' }}>
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                {c.image_url && (
+                  <div style={{
+                    margin: '-24px -24px 16px -24px',
+                    height: '140px',
+                    overflow: 'hidden',
+                    borderTopLeftRadius: 'var(--radius-lg)',
+                    borderTopRightRadius: 'var(--radius-lg)',
+                    position: 'relative',
+                    backgroundColor: '#0F172A',
+                  }}>
+                    <img 
+                      src={c.image_url} 
+                      alt={c.name}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        display: 'block'
+                      }}
+                    />
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                   <span className={`badge ${c.status === 'active' ? 'badge-active' : 'badge-warning'}`}>
                     {c.status === 'active' ? 'Em Andamento' : c.status}
                   </span>
-                  <button 
-                    onClick={() => onEditChallenge(c)}
-                    style={{ color: 'var(--color-brand-blue)', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px' }}
-                  >
-                    <Edit3 size={14} />
-                    <span>Editar</span>
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <button 
+                      onClick={() => onEditChallenge(c)}
+                      className="btn-secondary"
+                      style={{ padding: '5px 9px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      title="Editar Desafio"
+                    >
+                      <Edit3 size={13} />
+                      <span>Editar</span>
+                    </button>
+                    {onDeleteChallenge && (
+                      <button 
+                        onClick={() => onDeleteChallenge(c.id)}
+                        style={{
+                          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                          color: '#DC2626',
+                          border: '1px solid rgba(239, 68, 68, 0.25)',
+                          borderRadius: '6px',
+                          padding: '5px 9px',
+                          fontSize: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          cursor: 'pointer',
+                          fontWeight: 600,
+                          transition: 'all 0.2s',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.2)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)')}
+                        title="Excluir Desafio"
+                      >
+                        <Trash2 size={13} />
+                        <span>Excluir</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--color-primary-dark)', marginBottom: '8px' }}>
