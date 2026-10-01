@@ -1,5 +1,31 @@
-node_modules
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Production & Builds
+dist/
+build/
+admin/dist/
+*.tsbuildinfo
+
+# Expo & Local Development
+.expo/
+mobile/.expo/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment & Credentials
 .env
 .env.*
-dist
-*.log
+.env.local
+*.pem
+*.keystore
+
+# System & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
