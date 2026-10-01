@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Switch, Modal, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Switch, Modal, TextInput, ActivityIndicator, Image } from 'react-native';
 import { 
   User, 
   Flame, 
@@ -318,6 +318,16 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <Text style={styles.signOutText}>Sair da Conta</Text>
         </TouchableOpacity>
       )}
+
+      {/* Brand Footer Seal */}
+      <View style={styles.footerBrand}>
+        <Image
+          source={require('../../assets/logo-full-navy.png')}
+          style={styles.footerBrandLogo}
+          resizeMode="contain"
+        />
+        <Text style={styles.footerBrandText}>Equipe Corro por Amor • v1.0.0</Text>
+      </View>
 
       {/* Edit Profile Modal */}
       <Modal
@@ -748,5 +758,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '900',
     color: theme.colors.white,
+  },
+  footerBrand: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 28,
+    marginBottom: 20,
+    gap: 6,
+  },
+  footerBrandLogo: {
+    width: 130,
+    height: 38,
+    opacity: 0.85,
+  },
+  footerBrandText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: theme.colors.textMutedSoft,
+    letterSpacing: 0.5,
   },
 });

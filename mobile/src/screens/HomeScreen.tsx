@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image } from 'react-native';
 import { 
   Play, 
   Flame, 
@@ -99,10 +99,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {/* 1. Top Greeting Header */}
+      {/* 1. Top Greeting Header with Brand Logo */}
       <View style={styles.topHeader}>
         <View style={styles.headerLeft}>
-          <Text style={styles.greetingSubtitle}>BEM-VINDO DE VOLTA</Text>
+          <Image
+            source={require('../../assets/logo-full-navy.png')}
+            style={styles.brandHeaderLogo}
+            resizeMode="contain"
+          />
           <Text style={styles.greetingTitle}>Olá, {athleteName} 👋</Text>
         </View>
 
@@ -382,6 +386,11 @@ const styles = StyleSheet.create({
   },
   headerLeft: {
     gap: 3,
+  },
+  brandHeaderLogo: {
+    width: 140,
+    height: 32,
+    marginBottom: 4,
   },
   greetingSubtitle: {
     fontSize: 11,

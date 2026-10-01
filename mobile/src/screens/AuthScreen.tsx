@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { Flame, Mail, Lock, User, ArrowRight, Zap, ShieldCheck } from 'lucide-react-native';
 import { theme } from '../theme';
 import { supabase } from '../api/supabase';
@@ -79,12 +79,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Brand Hero (Reference Screens 6 & 7) */}
+        {/* Brand Hero with Official Logo */}
         <View style={styles.brandHero}>
-          <View style={styles.logoCircle}>
-            <Flame size={32} color={theme.colors.white} strokeWidth={2.4} />
-          </View>
-          <Text style={styles.brandTitle}>CORRO POR AMOR</Text>
+          <Image
+            source={require('../../assets/logo-full-navy.png')}
+            style={styles.brandLogoImage}
+            resizeMode="contain"
+          />
           <Text style={styles.brandSubtitle}>
             Desafios virtuais de corrida, rankings em tempo real e medalhas exclusivas.
           </Text>
@@ -218,23 +219,12 @@ const styles = StyleSheet.create({
   },
   brandHero: {
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: 20,
+    marginTop: 10,
   },
-  logoCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: theme.colors.primaryDark,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 14,
-    ...theme.shadows.floating,
-  },
-  brandTitle: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: theme.colors.primaryDark,
-    letterSpacing: 1,
+  brandLogoImage: {
+    width: 240,
+    height: 110,
   },
   brandSubtitle: {
     fontSize: 13,

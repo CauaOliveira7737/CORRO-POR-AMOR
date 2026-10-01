@@ -6,9 +6,9 @@ import {
   ShieldCheck, 
   Award, 
   ExternalLink,
-  Flame,
   LogOut
 } from 'lucide-react';
+import logoSymbolWhite from '../assets/logo-symbol-white.png';
 
 export type AdminTab = 'dashboard' | 'challenges' | 'participants' | 'validation' | 'medals';
 
@@ -56,16 +56,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
         gap: '12px'
       }}>
         <div style={{
-          width: '40px',
-          height: '40px',
+          width: '42px',
+          height: '42px',
           borderRadius: '10px',
           backgroundColor: 'var(--color-primary-dark)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: '#FFFFFF'
+          padding: '6px',
         }}>
-          <Flame size={22} strokeWidth={2} />
+          <img 
+            src={logoSymbolWhite} 
+            alt="Corro por Amor" 
+            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+          />
         </div>
         <div>
           <h1 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--color-primary-dark)', letterSpacing: '-0.02em' }}>
