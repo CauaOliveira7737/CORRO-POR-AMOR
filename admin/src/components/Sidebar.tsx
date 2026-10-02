@@ -8,7 +8,6 @@ import {
   ExternalLink,
   LogOut
 } from 'lucide-react';
-import logoSymbolWhite from '../assets/logo-symbol-white.png';
 
 export type AdminTab = 'dashboard' | 'challenges' | 'participants' | 'validation' | 'medals';
 
@@ -56,17 +55,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
         gap: '12px'
       }}>
         <div style={{
-          width: '42px',
-          height: '42px',
+          width: '44px',
+          height: '44px',
           borderRadius: '10px',
-          backgroundColor: 'var(--color-primary-dark)',
+          backgroundColor: '#000000',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '6px',
+          padding: '4px',
+          overflow: 'hidden',
         }}>
           <img 
-            src={logoSymbolWhite} 
+            src="/favicon.png" 
             alt="Corro por Amor" 
             style={{ width: '100%', height: '100%', objectFit: 'contain' }}
           />

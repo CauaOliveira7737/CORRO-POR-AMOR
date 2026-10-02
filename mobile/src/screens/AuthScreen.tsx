@@ -79,13 +79,15 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Brand Hero with Official Logo */}
+        {/* Brand Hero with Pristine Official Logo */}
         <View style={styles.brandHero}>
-          <Image
-            source={require('../../assets/logo-full-navy.png')}
-            style={styles.brandLogoImage}
-            resizeMode="contain"
-          />
+          <View style={styles.logoBadge}>
+            <Image
+              source={require('../../assets/logo.png')}
+              style={styles.brandLogoImage}
+              resizeMode="contain"
+            />
+          </View>
           <Text style={styles.brandSubtitle}>
             Desafios virtuais de corrida, rankings em tempo real e medalhas exclusivas.
           </Text>
@@ -220,11 +222,25 @@ const styles = StyleSheet.create({
   brandHero: {
     alignItems: 'center',
     marginBottom: 20,
-    marginTop: 10,
+    marginTop: 6,
+  },
+  logoBadge: {
+    backgroundColor: '#000000',
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.16,
+    shadowRadius: 10,
+    elevation: 5,
+    marginBottom: 10,
   },
   brandLogoImage: {
-    width: 240,
-    height: 110,
+    width: 250,
+    height: 160,
   },
   brandSubtitle: {
     fontSize: 13,
