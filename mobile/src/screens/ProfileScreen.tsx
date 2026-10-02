@@ -322,7 +322,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       {/* Brand Footer Seal */}
       <View style={styles.footerBrand}>
         <Image
-          source={require('../../assets/logo-navy.png')}
+          source={require('../../assets/symbol-navy.png')}
           style={styles.footerBrandLogo}
           resizeMode="contain"
         />
@@ -767,9 +767,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   footerBrandLogo: {
-    width: 140,
-    height: 48,
-    opacity: 0.9,
+    width: 36,
+    height: 36,
+    opacity: 0.85,
   },
   footerBrandText: {
     fontSize: 11,

@@ -102,11 +102,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       {/* 1. Top Greeting Header with Brand Logo */}
       <View style={styles.topHeader}>
         <View style={styles.headerLeft}>
-          <Image
-            source={require('../../assets/logo-navy.png')}
-            style={styles.brandHeaderLogo}
-            resizeMode="contain"
-          />
+          <View style={styles.brandRow}>
+            <Image
+              source={require('../../assets/symbol-navy.png')}
+              style={styles.headerBrandSymbol}
+              resizeMode="contain"
+            />
+            <Text style={styles.brandNameTitle}>CORRO POR AMOR</Text>
+          </View>
           <Text style={styles.greetingTitle}>Olá, {athleteName} 👋</Text>
         </View>
 
@@ -387,10 +390,21 @@ const styles = StyleSheet.create({
   headerLeft: {
     gap: 3,
   },
-  brandHeaderLogo: {
-    width: 130,
-    height: 34,
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
     marginBottom: 2,
+  },
+  headerBrandSymbol: {
+    width: 26,
+    height: 26,
+  },
+  brandNameTitle: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: theme.colors.palette.blue1,
+    letterSpacing: 0.6,
   },
   greetingSubtitle: {
     fontSize: 11,

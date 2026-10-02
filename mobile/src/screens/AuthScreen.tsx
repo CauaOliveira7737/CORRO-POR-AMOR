@@ -433,8 +433,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   logoWrapper: {
-    width: 260,
-    height: 130,
+    width: 320,
+    height: 190,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
