@@ -1,6 +1,28 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
-import { Flame, Mail, Lock, User, ArrowRight, Zap, ShieldCheck } from 'lucide-react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  StyleSheet, 
+  ActivityIndicator, 
+  KeyboardAvoidingView, 
+  Platform, 
+  ScrollView, 
+  Image,
+  Animated,
+  StatusBar
+} from 'react-native';
+import { 
+  Mail, 
+  Lock, 
+  User, 
+  ArrowRight, 
+  Eye, 
+  EyeOff, 
+  ShieldCheck, 
+  Sparkles 
+} from 'lucide-react-native';
 import { theme } from '../theme';
 import { supabase } from '../api/supabase';
 
@@ -13,12 +35,74 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [focusedField, setFocusedField] = useState<'name' | 'email' | 'password' | null>(null);
+
+  // Micro-animations
+  const entranceAnim = useRef(new Animated.Value(0)).current;
+  const sheetSlideAnim = useRef(new Animated.Value(35)).current;
+  const buttonScale = useRef(new Animated.Value(1)).current;
+  const tabSwitchAnim = useRef(new Animated.Value(1)).current; // 1 for login, 0 for signup
+
+  useEffect(() => {
+    // Screen entrance animation (fade-in + slide-up)
+    Animated.parallel([
+      Animated.timing(entranceAnim, {
+        toValue: 1,
+        duration: 550,
+        useNativeDriver: true,
+      }),
+      Animated.spring(sheetSlideAnim, {
+        toValue: 0,
+        tension: 50,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  const handleTabChange = (loginMode: boolean) => {
+    if (loginMode === isLogin) return;
+    setErrorMsg(null);
+    
+    // Smooth fade/transition when switching tabs
+    Animated.timing(tabSwitchAnim, {
+      toValue: 0,
+      duration: 120,
+      useNativeDriver: true,
+    }).start(() => {
+      setIsLogin(loginMode);
+      Animated.timing(tabSwitchAnim, {
+        toValue: 1,
+        duration: 180,
+        useNativeDriver: true,
+      }).start();
+    });
+  };
+
+  const handlePressIn = () => {
+    Animated.spring(buttonScale, {
+      toValue: 0.96,
+      tension: 100,
+      friction: 5,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(buttonScale, {
+      toValue: 1,
+      tension: 100,
+      friction: 5,
+      useNativeDriver: true,
+    }).start();
+  };
 
   const handleSubmit = async () => {
     if (!email || !password || (!isLogin && !name)) {
-      setErrorMsg('Por favor, preencha todos os campos.');
+      setErrorMsg('Por favor, preencha todos os campos obrigatórios.');
       return;
     }
 
@@ -47,7 +131,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
         });
         if (signUpError) throw signUpError;
 
-        // Auto sign in if session was not attached
+        // Auto sign in if session was not automatically attached
         if (!signUpData.session) {
           const { error: signInError } = await supabase.auth.signInWithPassword({
             email: cleanEmail,
@@ -62,11 +146,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
       if (msg.includes('Invalid login credentials')) {
         setErrorMsg('E-mail ou senha incorretos.');
       } else if (msg.includes('User already registered')) {
-        setErrorMsg('Este e-mail já está cadastrado. Tente entrar.');
+        setErrorMsg('Este e-mail já está cadastrado. Alterne para Entrar.');
       } else if (msg.includes('Password should be at least')) {
-        setErrorMsg('A senha deve ter no mínimo 6 caracteres.');
+        setErrorMsg('A senha precisa ter pelo menos 6 caracteres.');
       } else {
-        setErrorMsg(msg || 'Erro na autenticação. Verifique seus dados.');
+        setErrorMsg(msg || 'Falha ao autenticar. Verifique sua conexão e dados.');
       }
     } finally {
       setLoading(false);
@@ -78,27 +162,58 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
       style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Brand Hero with Pristine Official Logo */}
-        <View style={styles.brandHero}>
-          <View style={styles.logoBadge}>
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.palette.blue1} />
+
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        {/* 1. Immersive Top Hero (Curved Header Style) */}
+        <Animated.View 
+          style={[
+            styles.heroSection, 
+            { opacity: entranceAnim }
+          ]}
+        >
+          {/* Subtle Decorative Geometric Circles */}
+          <View style={styles.decorCircleTopRight} />
+          <View style={styles.decorCircleBottomLeft} />
+
+          {/* Tag Pill */}
+          <View style={styles.brandTagPill}>
+            <Sparkles size={11} color={theme.colors.palette.blue9} strokeWidth={2.4} />
+            <Text style={styles.brandTagText}>DESAFIOS VIRTUAIS & RUNNING CLUB</Text>
+          </View>
+
+          {/* Official Logo (White on Navy, Zero Box/Card) */}
+          <View style={styles.logoWrapper}>
             <Image
-              source={require('../../assets/logo.png')}
-              style={styles.brandLogoImage}
+              source={require('../../assets/logo-white.png')}
+              style={styles.logoImage}
               resizeMode="contain"
             />
           </View>
-          <Text style={styles.brandSubtitle}>
-            Desafios virtuais de corrida, rankings em tempo real e medalhas exclusivas.
-          </Text>
-        </View>
 
-        {/* Card Form */}
-        <View style={styles.formCard}>
-          {/* Segmented Auth Switcher */}
+          <Text style={styles.heroSubtitle}>
+            Supere seus limites, conquiste medalhas e suba no ranking.
+          </Text>
+        </Animated.View>
+
+        {/* 2. Curved White Bottom Sheet */}
+        <Animated.View 
+          style={[
+            styles.bottomSheet, 
+            { 
+              transform: [{ translateY: sheetSlideAnim }],
+              opacity: entranceAnim
+            }
+          ]}
+        >
+          {/* Tab Switcher: Entrar / Cadastrar */}
           <View style={styles.tabTrack}>
             <TouchableOpacity
-              onPress={() => { setIsLogin(true); setErrorMsg(null); }}
+              onPress={() => handleTabChange(true)}
               style={[styles.tabButton, isLogin && styles.tabButtonActive]}
               activeOpacity={0.8}
             >
@@ -108,100 +223,153 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() => { setIsLogin(false); setErrorMsg(null); }}
+              onPress={() => handleTabChange(false)}
               style={[styles.tabButton, !isLogin && styles.tabButtonActive]}
               activeOpacity={0.8}
             >
               <Text style={[styles.tabButtonText, !isLogin && styles.tabButtonTextActive]}>
-                Cadastrar
+                Criar Conta
               </Text>
             </TouchableOpacity>
           </View>
 
-          {/* Error Message */}
+          {/* Error Message Box */}
           {errorMsg && (
             <View style={styles.errorBox}>
               <Text style={styles.errorText}>{errorMsg}</Text>
             </View>
           )}
 
-          {/* Name Field (Sign Up Only) */}
-          {!isLogin && (
+          {/* Form Fields with Fade/Transition */}
+          <Animated.View style={[styles.formFields, { opacity: tabSwitchAnim }]}>
+            {/* Name Field (Sign Up Only) */}
+            {!isLogin && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>NOME COMPLETO</Text>
+                <View style={[
+                  styles.inputContainer,
+                  focusedField === 'name' && styles.inputContainerFocused
+                ]}>
+                  <User 
+                    size={18} 
+                    color={focusedField === 'name' ? theme.colors.palette.blue4 : theme.colors.palette.blue7} 
+                    strokeWidth={2}
+                  />
+                  <TextInput
+                    placeholder="Seu nome de atleta"
+                    placeholderTextColor={theme.colors.palette.blue7}
+                    value={name}
+                    onChangeText={setName}
+                    style={styles.textInput}
+                    onFocus={() => setFocusedField('name')}
+                    onBlur={() => setFocusedField(null)}
+                    autoCapitalize="words"
+                  />
+                </View>
+              </View>
+            )}
+
+            {/* Email Field */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>NOME COMPLETO</Text>
-              <View style={styles.inputContainer}>
-                <User size={18} color={theme.colors.textSecondary} />
+              <Text style={styles.inputLabel}>E-MAIL</Text>
+              <View style={[
+                styles.inputContainer,
+                focusedField === 'email' && styles.inputContainerFocused
+              ]}>
+                <Mail 
+                  size={18} 
+                  color={focusedField === 'email' ? theme.colors.palette.blue4 : theme.colors.palette.blue7} 
+                  strokeWidth={2}
+                />
                 <TextInput
-                  placeholder="Seu nome completo"
-                  placeholderTextColor={theme.colors.textMutedSoft}
-                  value={name}
-                  onChangeText={setName}
+                  placeholder="seu.email@exemplo.com"
+                  placeholderTextColor={theme.colors.palette.blue7}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
                   style={styles.textInput}
+                  onFocus={() => setFocusedField('email')}
+                  onBlur={() => setFocusedField(null)}
                 />
               </View>
             </View>
-          )}
 
-          {/* Email Field */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>E-MAIL</Text>
-            <View style={styles.inputContainer}>
-              <Mail size={18} color={theme.colors.textSecondary} />
-              <TextInput
-                placeholder="seu.email@exemplo.com"
-                placeholderTextColor={theme.colors.textMutedSoft}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                style={styles.textInput}
-              />
-            </View>
-          </View>
-
-          {/* Password Field */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>SENHA</Text>
-            <View style={styles.inputContainer}>
-              <Lock size={18} color={theme.colors.textSecondary} />
-              <TextInput
-                placeholder="••••••••"
-                placeholderTextColor={theme.colors.textMutedSoft}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                style={styles.textInput}
-              />
-            </View>
-          </View>
-
-          {/* Submit Button */}
-          <TouchableOpacity
-            onPress={handleSubmit}
-            style={styles.submitButton}
-            disabled={loading}
-            activeOpacity={0.88}
-          >
-            {loading ? (
-              <ActivityIndicator color={theme.colors.white} />
-            ) : (
-              <View style={styles.submitButtonContent}>
-                <Text style={styles.submitButtonText}>
-                  {isLogin ? 'ENTRAR NA CONTA' : 'CRIAR MINHA CONTA'}
-                </Text>
-                <ArrowRight size={16} color={theme.colors.white} strokeWidth={2.4} />
+            {/* Password Field */}
+            <View style={styles.inputGroup}>
+              <View style={styles.passwordLabelRow}>
+                <Text style={styles.inputLabel}>SENHA</Text>
+                {isLogin && (
+                  <TouchableOpacity activeOpacity={0.7}>
+                    <Text style={styles.forgotPasswordText}>Esqueceu a senha?</Text>
+                  </TouchableOpacity>
+                )}
               </View>
-            )}
-          </TouchableOpacity>
-        </View>
+              <View style={[
+                styles.inputContainer,
+                focusedField === 'password' && styles.inputContainerFocused
+              ]}>
+                <Lock 
+                  size={18} 
+                  color={focusedField === 'password' ? theme.colors.palette.blue4 : theme.colors.palette.blue7} 
+                  strokeWidth={2}
+                />
+                <TextInput
+                  placeholder="••••••••"
+                  placeholderTextColor={theme.colors.palette.blue7}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  style={styles.textInput}
+                  onFocus={() => setFocusedField('password')}
+                  onBlur={() => setFocusedField(null)}
+                />
+                <TouchableOpacity 
+                  onPress={() => setShowPassword(!showPassword)} 
+                  style={styles.eyeButton}
+                  activeOpacity={0.7}
+                >
+                  {showPassword ? (
+                    <EyeOff size={18} color={theme.colors.palette.blue7} />
+                  ) : (
+                    <Eye size={18} color={theme.colors.palette.blue7} />
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Animated.View>
 
-        {/* Security badge footer */}
-        <View style={styles.footerNote}>
-          <ShieldCheck size={14} color={theme.colors.textSecondary} />
-          <Text style={styles.footerText}>
-            Dados protegidos e telemetria anti-fraude ativa
-          </Text>
-        </View>
+          {/* Action Button with Spring Scale Feedback */}
+          <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+            <TouchableOpacity
+              onPress={handleSubmit}
+              onPressIn={handlePressIn}
+              onPressOut={handlePressOut}
+              disabled={loading}
+              style={styles.submitButton}
+              activeOpacity={0.92}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <View style={styles.submitContent}>
+                  <Text style={styles.submitText}>
+                    {isLogin ? 'ENTRAR NA CONTA' : 'CRIAR MINHA CONTA'}
+                  </Text>
+                  <ArrowRight size={17} color="#FFFFFF" strokeWidth={2.4} />
+                </View>
+              )}
+            </TouchableOpacity>
+          </Animated.View>
+
+          {/* Security Footnote */}
+          <View style={styles.footerNote}>
+            <ShieldCheck size={14} color={theme.colors.palette.blue6} strokeWidth={2.2} />
+            <Text style={styles.footerNoteText}>
+              Ambiente protegido com telemetria anti-fraude
+            </Text>
+          </View>
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -210,164 +378,230 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.palette.blue1, // Deep navy background
   },
   scrollContent: {
     flexGrow: 1,
+    justifyContent: 'space-between',
+  },
+
+  // 1. Immersive Hero Section
+  heroSection: {
     paddingHorizontal: 24,
-    paddingTop: 40,
-    paddingBottom: 40,
-    justifyContent: 'center',
-  },
-  brandHero: {
+    paddingTop: Platform.OS === 'ios' ? 48 : 36,
+    paddingBottom: 48,
     alignItems: 'center',
-    marginBottom: 20,
-    marginTop: 6,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  logoBadge: {
-    backgroundColor: '#000000',
-    borderRadius: 22,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+  decorCircleTopRight: {
+    position: 'absolute',
+    top: -60,
+    right: -60,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: theme.colors.palette.blue2,
+    opacity: 0.45,
+  },
+  decorCircleBottomLeft: {
+    position: 'absolute',
+    bottom: 20,
+    left: -70,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: theme.colors.palette.blue3,
+    opacity: 0.35,
+  },
+  brandTagPill: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.16,
-    shadowRadius: 10,
-    elevation: 5,
-    marginBottom: 10,
-  },
-  brandLogoImage: {
-    width: 250,
-    height: 160,
-  },
-  brandSubtitle: {
-    fontSize: 13,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 6,
-    paddingHorizontal: 20,
-    lineHeight: 18,
-  },
-  formCard: {
-    backgroundColor: theme.colors.cardBackground,
-    borderRadius: theme.radius.xxl,
-    padding: 24,
-    ...theme.shadows.floating,
+    gap: 6,
+    backgroundColor: 'rgba(1, 79, 134, 0.45)',
     borderWidth: 1,
-    borderColor: theme.colors.borderLight,
-    gap: 16,
+    borderColor: 'rgba(137, 194, 217, 0.3)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginBottom: 16,
   },
+  brandTagText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: theme.colors.palette.blue9,
+    letterSpacing: 0.8,
+  },
+  logoWrapper: {
+    width: 260,
+    height: 130,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroSubtitle: {
+    fontSize: 13,
+    color: theme.colors.palette.blue9,
+    textAlign: 'center',
+    lineHeight: 18,
+    paddingHorizontal: 24,
+    fontWeight: '500',
+  },
+
+  // 2. Curved White Bottom Sheet
+  bottomSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 36,
+    borderTopRightRadius: 36,
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: Platform.OS === 'ios' ? 44 : 32,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+    elevation: 12,
+    gap: 18,
+  },
+
+  // Segmented Tab Switcher
   tabTrack: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.subtleGray,
-    borderRadius: theme.radius.full,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 24,
     padding: 4,
   },
   tabButton: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 11,
     alignItems: 'center',
-    borderRadius: theme.radius.full,
+    borderRadius: 20,
   },
   tabButtonActive: {
-    backgroundColor: theme.colors.primaryDark,
-    ...theme.shadows.card,
+    backgroundColor: theme.colors.palette.blue1,
+    shadowColor: theme.colors.palette.blue1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
   },
   tabButtonText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
-    color: theme.colors.textSecondary,
+    color: theme.colors.palette.blue6,
   },
   tabButtonTextActive: {
-    color: theme.colors.white,
-    fontWeight: '800',
+    color: '#FFFFFF',
   },
+
+  // Error Box
   errorBox: {
     backgroundColor: '#FEF2F2',
     borderWidth: 1,
-    borderColor: '#FECACA',
-    borderRadius: theme.radius.md,
-    padding: 10,
+    borderColor: '#FCA5A5',
+    padding: 12,
+    borderRadius: 14,
   },
   errorText: {
-    color: '#DC2626',
     fontSize: 12,
+    color: '#DC2626',
     fontWeight: '600',
     textAlign: 'center',
+  },
+
+  // Form Fields
+  formFields: {
+    gap: 16,
   },
   inputGroup: {
     gap: 6,
   },
+  passwordLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   inputLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '800',
-    color: theme.colors.textSecondary,
+    color: theme.colors.palette.blue1,
     letterSpacing: 0.6,
+  },
+  forgotPasswordText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: theme.colors.palette.blue5,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.subtleGray,
-    borderRadius: theme.radius.lg,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 16,
     paddingHorizontal: 14,
-    height: 48,
-    borderWidth: 1,
-    borderColor: theme.colors.borderLight,
+    height: 52,
     gap: 10,
+  },
+  inputContainerFocused: {
+    borderColor: theme.colors.palette.blue4,
+    backgroundColor: '#FFFFFF',
+    shadowColor: theme.colors.palette.blue4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
   },
   textInput: {
     flex: 1,
     fontSize: 14,
-    color: theme.colors.primaryDark,
+    color: theme.colors.palette.blue1,
     fontWeight: '600',
   },
+  eyeButton: {
+    padding: 4,
+  },
+
+  // Submit Button
   submitButton: {
-    backgroundColor: theme.colors.primaryDark,
-    borderRadius: theme.radius.xl,
-    paddingVertical: 15,
+    backgroundColor: theme.colors.palette.blue4,
+    borderRadius: 18,
+    height: 54,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 6,
-    ...theme.shadows.floating,
+    shadowColor: theme.colors.palette.blue4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    elevation: 6,
   },
-  submitButtonContent: {
+  submitContent: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  submitButtonText: {
-    color: theme.colors.white,
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  demoButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: theme.radius.xl,
-    backgroundColor: 'rgba(1, 79, 134, 0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(1, 79, 134, 0.12)',
-  },
-  demoButtonText: {
-    color: theme.colors.brandBlue,
-    fontSize: 12,
+  submitText: {
+    color: '#FFFFFF',
+    fontSize: 14,
     fontWeight: '800',
+    letterSpacing: 0.8,
   },
+
+  // Footer Note
   footerNote: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    marginTop: 24,
+    paddingTop: 4,
   },
-  footerText: {
+  footerNoteText: {
     fontSize: 11,
-    color: theme.colors.textSecondary,
+    color: theme.colors.palette.blue6,
+    fontWeight: '600',
   },
 });

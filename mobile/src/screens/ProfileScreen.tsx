@@ -321,13 +321,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
       {/* Brand Footer Seal */}
       <View style={styles.footerBrand}>
-        <View style={styles.footerLogoBadge}>
-          <Image
-            source={require('../../assets/logo.png')}
-            style={styles.footerBrandLogo}
-            resizeMode="contain"
-          />
-        </View>
+        <Image
+          source={require('../../assets/logo-navy.png')}
+          style={styles.footerBrandLogo}
+          resizeMode="contain"
+        />
         <Text style={styles.footerBrandText}>Equipe Corro por Amor • v1.0.0</Text>
       </View>
 
@@ -768,17 +766,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     gap: 8,
   },
-  footerLogoBadge: {
-    backgroundColor: '#000000',
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   footerBrandLogo: {
-    width: 130,
+    width: 140,
     height: 48,
+    opacity: 0.9,
   },
   footerBrandText: {
     fontSize: 11,

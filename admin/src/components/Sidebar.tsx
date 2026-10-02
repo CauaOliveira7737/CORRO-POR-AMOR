@@ -58,7 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           width: '44px',
           height: '44px',
           borderRadius: '10px',
-          backgroundColor: '#000000',
+          backgroundColor: 'var(--color-primary-dark)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
