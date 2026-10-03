@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { Trophy, Award, Flame, User, CheckCircle2, Medal, Crown } from 'lucide-react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar, Platform } from 'react-native';
+import { Trophy, Award, Flame, User, CheckCircle2, Medal, Crown, Sparkles } from 'lucide-react-native';
 import { theme } from '../theme';
 import { ChallengeParticipant, Profile, Challenge } from '@corro-por-amor/shared';
 
@@ -183,18 +183,53 @@ export const RankingScreen: React.FC<RankingScreenProps> = ({
   const top3 = sorted.slice(0, 3);
   const remaining = sorted.slice(3);
 
+  const userRankIndex = sorted.findIndex(p => p.athlete_id === currentProfile?.id);
+  const userRank = userRankIndex !== -1 ? userRankIndex + 1 : null;
+  const userParticipant = userRankIndex !== -1 ? sorted[userRankIndex] : null;
+
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.pageSubtitle}>
-          {distanceCategory === 'all' ? 'COMUNIDADE & ATLETAS' : `CATEGORIA • META ${distanceCategory} KM`}
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.palette.blue1} />
+
+      {/* 1. Immersive Deep Navy Curved Hero Header */}
+      <View style={styles.heroHeader}>
+        <View style={styles.decorCircleTopRight} />
+        <View style={styles.decorCircleBottomLeft} />
+
+        <View style={styles.tagPill}>
+          <Sparkles size={11} color={theme.colors.palette.blue9} strokeWidth={2.4} />
+          <Text style={styles.tagPillText}>
+            {distanceCategory === 'all' ? 'MURAL GERAL DE LÍDERES' : `CATEGORIA • ${distanceCategory} KM`}
+          </Text>
+        </View>
+
+        <Text style={styles.heroTitle}>Classificação Oficial</Text>
+        <Text style={styles.heroSubtitle}>
+          Acompanhe seu desempenho e conquiste seu lugar no pódio do Corro por Amor.
         </Text>
-        <Text style={styles.pageTitle}>Classificação Oficial</Text>
+
+        {/* Current User Rank Pill / Card */}
+        <View style={styles.userRankPill}>
+          <View style={styles.userRankLeft}>
+            <Trophy size={16} color="#FFD700" strokeWidth={2.2} />
+            <Text style={styles.userRankTitle}>
+              {userRank ? `Você está em ${userRank}º Lugar` : 'Participe do ranking oficial'}
+            </Text>
+          </View>
+          {userParticipant && (
+            <Text style={styles.userRankMetric}>
+              {filterType === 'distance' 
+                ? `${userParticipant.completed_km.toFixed(1)} km` 
+                : `${Math.round(userParticipant.completion_percentage)}%`}
+            </Text>
+          )}
+        </View>
       </View>
 
-      {/* Filter Tabs (Distance / Progress / XP) */}
-      <View style={styles.filterPillsContainer}>
+      {/* 2. Curved White Content Sheet */}
+      <View style={styles.curvedContentSheet}>
+        {/* Filter Tabs (Distance / Progress / XP) */}
+        <View style={styles.filterPillsContainer}>
         <View style={styles.filterPillTrack}>
           <TouchableOpacity
             onPress={() => setFilterType('distance')}
@@ -439,6 +474,7 @@ export const RankingScreen: React.FC<RankingScreenProps> = ({
           })}
         </View>
       </ScrollView>
+      </View>
     </View>
   );
 };
@@ -446,25 +482,109 @@ export const RankingScreen: React.FC<RankingScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.palette.blue1,
   },
-  header: {
+
+  // 1. Immersive Deep Navy Curved Hero Header
+  heroHeader: {
+    backgroundColor: theme.colors.palette.blue1,
+    paddingTop: Platform.OS === 'ios' ? 44 : 26,
     paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 6,
+    paddingBottom: 32,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  pageSubtitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: theme.colors.textSecondary,
+  decorCircleTopRight: {
+    position: 'absolute',
+    top: -40,
+    right: -40,
+    width: 170,
+    height: 170,
+    borderRadius: 85,
+    backgroundColor: theme.colors.palette.blue2,
+    opacity: 0.5,
+  },
+  decorCircleBottomLeft: {
+    position: 'absolute',
+    bottom: -30,
+    left: -40,
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    backgroundColor: theme.colors.palette.blue3,
+    opacity: 0.35,
+  },
+  tagPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(1, 79, 134, 0.5)',
+    borderWidth: 1,
+    borderColor: 'rgba(137, 194, 217, 0.25)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  tagPillText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: theme.colors.palette.blue9,
     letterSpacing: 0.8,
   },
-  pageTitle: {
-    fontSize: 24,
+  heroTitle: {
+    fontSize: 26,
     fontWeight: '900',
-    color: theme.colors.primaryDark,
+    color: theme.colors.white,
     letterSpacing: -0.5,
-    marginTop: 2,
+    marginBottom: 4,
+  },
+  heroSubtitle: {
+    fontSize: 12,
+    color: theme.colors.palette.blue9,
+    lineHeight: 17,
+    fontWeight: '500',
+    marginBottom: 16,
+  },
+  userRankPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(1, 42, 74, 0.75)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.35)',
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  userRankLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  userRankTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: theme.colors.white,
+  },
+  userRankMetric: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#FFD700',
+  },
+
+  // 2. Curved Content Sheet
+  curvedContentSheet: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -16,
+  },
+  scrollList: {
+    paddingBottom: 140,
   },
 
   // Filter Pills

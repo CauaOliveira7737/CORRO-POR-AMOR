@@ -59,7 +59,8 @@
         {
           "androidGoogleMapsApiKey": "AIzaSyCvJk4nhuzk-hMWGjcF6Tu1lsfHhzHUnv0"
         }
-      ]
+      ],
+      "expo-splash-screen"
     ]
   }
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Play, BarChart2, Award, Calendar, Users, Target, ShieldCheck, Flame, CheckCircle2, Check } from 'lucide-react-native';
 import { theme } from '../theme';
@@ -52,10 +52,11 @@ export const ChallengeDetailScreen: React.FC<ChallengeDetailScreenProps> = ({
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.palette.blue1} />
       {/* Top Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
-          <ArrowLeft size={22} color={theme.colors.primaryDark} strokeWidth={2.4} />
+          <ArrowLeft size={20} color={theme.colors.white} strokeWidth={2.4} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>Detalhes do Desafio</Text>
         <View style={{ width: 36 }} />
@@ -279,32 +280,35 @@ export const ChallengeDetailScreen: React.FC<ChallengeDetailScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.palette.blue1,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.borderLight,
-    backgroundColor: theme.colors.cardBackground,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    backgroundColor: theme.colors.palette.blue1,
   },
   backButton: {
-    padding: 6,
+    padding: 8,
     borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.subtleGray,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
   },
   headerTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: theme.colors.primaryDark,
+    color: theme.colors.white,
+    letterSpacing: -0.2,
   },
   content: {
     padding: 20,
     gap: 18,
     paddingBottom: 40,
+    backgroundColor: theme.colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    minHeight: '100%',
   },
   heroCard: {
     backgroundColor: theme.colors.cardBackground,

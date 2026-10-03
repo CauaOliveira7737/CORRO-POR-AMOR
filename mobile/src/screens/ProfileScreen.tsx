@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Switch, Modal, TextInput, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Switch, Modal, TextInput, ActivityIndicator, Image, StatusBar, Platform } from 'react-native';
 import { 
   User, 
   Flame, 
@@ -18,7 +18,8 @@ import {
   Lock,
   Edit3,
   X,
-  Check
+  Check,
+  Sparkles
 } from 'lucide-react-native';
 import { theme } from '../theme';
 import { ProgressBar } from '../components/ProgressBar';
@@ -79,56 +80,70 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   };
 
   return (
-    <ScrollView 
-      style={styles.container} 
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* 1. Profile Hero Card (Reference Screen 2) */}
-      <View style={styles.profileHeroCard}>
-        <View style={styles.avatarWrapper}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarInitial}>
-              {profile?.name ? profile.name.charAt(0).toUpperCase() : 'A'}
-            </Text>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.palette.blue1} />
+      <ScrollView 
+        style={styles.container} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* 1. Immersive Deep Navy Curved Hero Header */}
+        <View style={styles.heroHeader}>
+          {/* Subtle Decorative Geometric Circles */}
+          <View style={styles.decorCircleTopRight} />
+          <View style={styles.decorCircleBottomLeft} />
+
+          <View style={styles.tagPill}>
+            <Sparkles size={11} color={theme.colors.palette.blue9} strokeWidth={2.4} />
+            <Text style={styles.tagPillText}>PERFIL DO ATLETA • RUNNING CLUB</Text>
           </View>
-          <View style={styles.levelPillBadge}>
-            <Text style={styles.levelPillText}>LVL {currentLevel}</Text>
+
+          <View style={styles.avatarWrapper}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarInitial}>
+                {profile?.name ? profile.name.charAt(0).toUpperCase() : 'A'}
+              </Text>
+            </View>
+            <View style={styles.levelPillBadge}>
+              <Text style={styles.levelPillText}>LVL {currentLevel}</Text>
+            </View>
+          </View>
+
+          <View style={styles.nameRow}>
+            <Text style={styles.name}>{profile?.name || 'Atleta'}</Text>
+            <TouchableOpacity 
+              onPress={() => {
+                setEditName(profile?.name || '');
+                setShowEditModal(true);
+              }}
+              style={styles.editButton}
+              activeOpacity={0.7}
+            >
+              <Edit3 size={15} color={theme.colors.palette.blue9} strokeWidth={2.2} />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.email}>{profile?.email || ''}</Text>
+
+          <View style={styles.xpRow}>
+            <View style={styles.xpPill}>
+              <Flame size={14} color="#FF5722" strokeWidth={2.4} />
+              <Text style={styles.xpPillText}>{currentXp.toLocaleString('pt-BR')} XP TOTAL</Text>
+            </View>
+          </View>
+
+          {/* Level Progression Progress Bar */}
+          <View style={styles.levelProgressBox}>
+            <View style={styles.levelProgressHeader}>
+              <Text style={styles.levelProgressTitle}>Evolução para o Nível {currentLevel + 1}</Text>
+              <Text style={styles.levelProgressXp}>{xpNeeded} XP restantes</Text>
+            </View>
+            <ProgressBar percentage={levelProgress} height={8} showLabel={false} />
           </View>
         </View>
 
-        <View style={styles.nameRow}>
-          <Text style={styles.name}>{profile?.name || 'Atleta'}</Text>
-          <TouchableOpacity 
-            onPress={() => {
-              setEditName(profile?.name || '');
-              setShowEditModal(true);
-            }}
-            style={styles.editButton}
-            activeOpacity={0.7}
-          >
-            <Edit3 size={15} color={theme.colors.brandBlue} strokeWidth={2.2} />
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.email}>{profile?.email || ''}</Text>
-
-        <View style={styles.xpRow}>
-          <View style={styles.xpPill}>
-            <Flame size={14} color="#C2410C" strokeWidth={2.4} />
-            <Text style={styles.xpPillText}>{currentXp.toLocaleString('pt-BR')} XP TOTAL</Text>
-          </View>
-        </View>
-
-        {/* Level Progression Progress Bar */}
-        <View style={styles.levelProgressBox}>
-          <View style={styles.levelProgressHeader}>
-            <Text style={styles.levelProgressTitle}>Evolução para o Nível {currentLevel + 1}</Text>
-            <Text style={styles.levelProgressXp}>{xpNeeded} XP restantes</Text>
-          </View>
-          <ProgressBar percentage={levelProgress} height={8} showLabel={false} />
-        </View>
-      </View>
+        {/* 2. Curved White Content Sheet */}
+        <View style={styles.curvedContentSheet}>
 
       {/* 2. Lifetime Stats Grid (Reference 3 Stat Pills) */}
       <View style={styles.statsRow}>
@@ -322,12 +337,14 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       {/* Brand Footer Seal */}
       <View style={styles.footerBrand}>
         <Image
-          source={require('../../assets/symbol-navy.png')}
+          source={require('../../assets/logo.png')}
           style={styles.footerBrandLogo}
           resizeMode="contain"
         />
         <Text style={styles.footerBrandText}>Equipe Corro por Amor • v1.0.0</Text>
       </View>
+        </View>
+      </ScrollView>
 
       {/* Edit Profile Modal */}
       <Modal
@@ -380,46 +397,81 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </View>
         </View>
       </Modal>
-    </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.palette.blue1,
   },
-  content: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 110, // Clears floating dock
-    gap: 18,
+  scrollContent: {
+    flexGrow: 1,
+    backgroundColor: theme.colors.palette.blue1,
   },
 
-  // 1. Profile Hero Card
-  profileHeroCard: {
-    backgroundColor: theme.colors.cardBackground,
-    borderRadius: theme.radius.xl,
-    padding: 24,
+  // 1. Immersive Deep Navy Curved Hero Header
+  heroHeader: {
+    backgroundColor: theme.colors.palette.blue1,
+    paddingTop: Platform.OS === 'ios' ? 44 : 28,
+    paddingHorizontal: 20,
+    paddingBottom: 36,
     alignItems: 'center',
-    ...theme.shadows.card,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  decorCircleTopRight: {
+    position: 'absolute',
+    top: -40,
+    right: -40,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: theme.colors.palette.blue2,
+    opacity: 0.5,
+  },
+  decorCircleBottomLeft: {
+    position: 'absolute',
+    bottom: -30,
+    left: -40,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: theme.colors.palette.blue3,
+    opacity: 0.35,
+  },
+  tagPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(1, 79, 134, 0.5)',
     borderWidth: 1,
-    borderColor: theme.colors.borderLight,
+    borderColor: 'rgba(137, 194, 217, 0.25)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+    marginBottom: 16,
+  },
+  tagPillText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: theme.colors.palette.blue9,
+    letterSpacing: 0.8,
   },
   avatarWrapper: {
     position: 'relative',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: theme.colors.primaryDark,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: theme.colors.palette.blue2,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: '#FFFFFF',
-    ...theme.shadows.card,
+    borderColor: theme.colors.palette.blue9,
   },
   avatarInitial: {
     color: theme.colors.white,
@@ -429,12 +481,12 @@ const styles = StyleSheet.create({
   levelPillBadge: {
     position: 'absolute',
     bottom: -4,
-    backgroundColor: theme.colors.brandBlue,
+    backgroundColor: theme.colors.accentEnergy,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: theme.radius.full,
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: theme.colors.palette.blue1,
   },
   levelPillText: {
     fontSize: 9,
@@ -446,34 +498,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    marginTop: 4,
   },
   name: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '900',
-    color: theme.colors.primaryDark,
+    color: theme.colors.white,
     letterSpacing: -0.3,
   },
   editButton: {
     padding: 6,
     borderRadius: theme.radius.full,
-    backgroundColor: 'rgba(1, 79, 134, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
   },
   email: {
     fontSize: 13,
-    color: theme.colors.textSecondary,
+    color: theme.colors.palette.blue9,
     marginTop: 2,
   },
   xpRow: {
-    marginTop: 12,
-    marginBottom: 16,
+    marginTop: 10,
+    marginBottom: 14,
   },
   xpPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#FFF7ED',
+    backgroundColor: 'rgba(255, 87, 34, 0.15)',
     borderWidth: 1,
-    borderColor: '#FED7AA',
+    borderColor: 'rgba(255, 87, 34, 0.4)',
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: theme.radius.full,
@@ -481,12 +534,14 @@ const styles = StyleSheet.create({
   xpPillText: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#C2410C',
+    color: '#FF8A65',
     letterSpacing: 0.5,
   },
   levelProgressBox: {
     width: '100%',
-    backgroundColor: theme.colors.subtleGray,
+    backgroundColor: 'rgba(1, 42, 74, 0.65)',
+    borderWidth: 1,
+    borderColor: 'rgba(137, 194, 217, 0.2)',
     padding: 14,
     borderRadius: theme.radius.lg,
     gap: 8,
@@ -499,12 +554,25 @@ const styles = StyleSheet.create({
   levelProgressTitle: {
     fontSize: 11,
     fontWeight: '700',
-    color: theme.colors.primaryDark,
+    color: theme.colors.white,
   },
   levelProgressXp: {
     fontSize: 11,
     fontWeight: '600',
-    color: theme.colors.textSecondary,
+    color: theme.colors.palette.blue9,
+  },
+
+  // 2. Curved Content Sheet
+  curvedContentSheet: {
+    backgroundColor: theme.colors.background,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -16,
+    paddingTop: 20,
+    paddingHorizontal: 18,
+    paddingBottom: 135,
+    gap: 18,
+    minHeight: 500,
   },
 
   // 2. Stats Grid
@@ -767,8 +835,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   footerBrandLogo: {
-    width: 36,
-    height: 36,
+    width: 64,
+    height: 44,
+    tintColor: theme.colors.palette.blue1,
     opacity: 0.85,
   },
   footerBrandText: {

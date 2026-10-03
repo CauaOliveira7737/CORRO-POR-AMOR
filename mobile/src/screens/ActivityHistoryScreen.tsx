@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Image, StatusBar, Platform } from 'react-native';
 import { 
   Activity as ActivityIcon, 
   Calendar, 
@@ -82,19 +82,54 @@ export const ActivityHistoryScreen: React.FC<ActivityHistoryScreenProps> = ({
     );
   };
 
+  const totalKmRecorded = activities.reduce((acc, a) => acc + (a.distance_km || 0), 0);
+  const totalMinutesRecorded = Math.round(activities.reduce((acc, a) => acc + (a.moving_seconds || 0), 0) / 60);
+
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.pageSubtitle}>SUAS CORRIDAS</Text>
-        <Text style={styles.pageTitle}>Histórico de Atividades</Text>
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.palette.blue1} />
+
+      {/* 1. Immersive Deep Navy Curved Hero Header */}
+      <View style={styles.heroHeader}>
+        <View style={styles.decorCircleTopRight} />
+        <View style={styles.decorCircleBottomLeft} />
+
+        <View style={styles.tagPill}>
+          <Sparkles size={11} color={theme.colors.palette.blue9} strokeWidth={2.4} />
+          <Text style={styles.tagPillText}>REGISTROS GPS • RUNNING CLUB</Text>
+        </View>
+
+        <Text style={styles.heroTitle}>Histórico de Atividades</Text>
+        <Text style={styles.heroSubtitle}>
+          Confira o resumo de todos os seus treinos, ritmos médios, rotas e medalhas.
+        </Text>
+
+        {/* Summary Metric Strip */}
+        <View style={styles.summaryStrip}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{activities.length}</Text>
+            <Text style={styles.summaryLabel}>Treinos</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{totalKmRecorded.toFixed(1)} km</Text>
+            <Text style={styles.summaryLabel}>Total Km</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{totalMinutesRecorded} min</Text>
+            <Text style={styles.summaryLabel}>Tempo Total</Text>
+          </View>
+        </View>
       </View>
 
-      {/* Activities List */}
-      <ScrollView 
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      >
+      {/* 2. Curved White Content Sheet */}
+      <View style={styles.curvedContentSheet}>
+        {/* Activities List */}
+        <ScrollView 
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        >
         <View style={styles.listHeaderRow}>
           <Text style={styles.listHeaderTitle}>ÚLTIMAS CORRIDAS</Text>
           <Text style={styles.listHeaderCount}>{activities.length} registradas</Text>
@@ -231,8 +266,7 @@ export const ActivityHistoryScreen: React.FC<ActivityHistoryScreenProps> = ({
           })
         )}
       </ScrollView>
-
-      {/* Photo Share Modal */}
+      </View>
 
       {/* Strava Photo Share Modal */}
       {selectedShareActivity && (
@@ -270,25 +304,111 @@ export const ActivityHistoryScreen: React.FC<ActivityHistoryScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.palette.blue1,
   },
-  header: {
+
+  // 1. Immersive Deep Navy Curved Hero Header
+  heroHeader: {
+    backgroundColor: theme.colors.palette.blue1,
+    paddingTop: Platform.OS === 'ios' ? 44 : 26,
     paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 6,
+    paddingBottom: 32,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  pageSubtitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: theme.colors.textSecondary,
+  decorCircleTopRight: {
+    position: 'absolute',
+    top: -40,
+    right: -40,
+    width: 170,
+    height: 170,
+    borderRadius: 85,
+    backgroundColor: theme.colors.palette.blue2,
+    opacity: 0.5,
+  },
+  decorCircleBottomLeft: {
+    position: 'absolute',
+    bottom: -30,
+    left: -40,
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    backgroundColor: theme.colors.palette.blue3,
+    opacity: 0.35,
+  },
+  tagPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(1, 79, 134, 0.5)',
+    borderWidth: 1,
+    borderColor: 'rgba(137, 194, 217, 0.25)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  tagPillText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: theme.colors.palette.blue9,
     letterSpacing: 0.8,
   },
-  pageTitle: {
-    fontSize: 24,
+  heroTitle: {
+    fontSize: 26,
     fontWeight: '900',
-    color: theme.colors.primaryDark,
+    color: theme.colors.white,
     letterSpacing: -0.5,
+    marginBottom: 4,
+  },
+  heroSubtitle: {
+    fontSize: 12,
+    color: theme.colors.palette.blue9,
+    lineHeight: 17,
+    fontWeight: '500',
+    marginBottom: 16,
+  },
+  summaryStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(1, 42, 74, 0.65)',
+    borderWidth: 1,
+    borderColor: 'rgba(137, 194, 217, 0.2)',
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  summaryItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  summaryValue: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: theme.colors.white,
+  },
+  summaryLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: theme.colors.palette.blue9,
     marginTop: 2,
+  },
+  summaryDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: 'rgba(137, 194, 217, 0.2)',
+  },
+
+  // 2. Curved Content Sheet
+  curvedContentSheet: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -16,
+    paddingTop: 16,
   },
 
   // List

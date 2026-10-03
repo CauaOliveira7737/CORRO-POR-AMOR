@@ -7,6 +7,7 @@ import { theme } from './src/theme';
 import { supabase } from './src/api/supabase';
 import { offlineStorage, PendingActivity } from './src/services/offlineStorage';
 import { BottomNavBar, MobileTab } from './src/components/BottomNavBar';
+import { AnimatedSplashScreen } from './src/components/AnimatedSplashScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { ChallengesScreen } from './src/screens/ChallengesScreen';
 import { ChallengeDetailScreen } from './src/screens/ChallengeDetailScreen';
@@ -493,28 +494,29 @@ function MainApp() {
   // Auth Gating: If not logged in and not loading (and no cached offline profile), show AuthScreen
   if (!session && !profile && !loading) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
-        <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
-        <AuthScreen 
-          onAuthSuccess={async () => {
-            const { data } = await supabase.auth.getSession();
-            if (data.session) {
-              setSession(data.session);
-              loadData(data.session.user.id);
-            }
-          }} 
-        />
-      </SafeAreaView>
+      <AnimatedSplashScreen isReady={!loading}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
+          <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
+          <AuthScreen 
+            onAuthSuccess={async () => {
+              const { data } = await supabase.auth.getSession();
+              if (data.session) {
+                setSession(data.session);
+                loadData(data.session.user.id);
+              }
+            }} 
+          />
+        </SafeAreaView>
+      </AnimatedSplashScreen>
     );
   }
 
-  // Initial Loading Spinner
+  // Initial Loading: Branded Animated Splash holds the screen seamlessly
   if (loading && !session && !profile) {
     return (
-      <View style={[styles.safeArea, styles.center]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.loadingText}>Carregando Corro por Amor...</Text>
-      </View>
+      <AnimatedSplashScreen isReady={false}>
+        <View style={[styles.safeArea, { backgroundColor: theme.colors.palette.blue1 }]} />
+      </AnimatedSplashScreen>
     );
   }
 
@@ -583,90 +585,92 @@ function MainApp() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
+    <AnimatedSplashScreen isReady={!loading}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
 
-      {/* Connection & Sync Status Banner */}
-      {syncBanner ? (
-        <View style={styles.syncBannerSuccess}>
-          <Check size={14} color="#059669" strokeWidth={2.5} />
-          <Text style={styles.syncBannerText}>{syncBanner}</Text>
+        {/* Connection & Sync Status Banner */}
+        {syncBanner ? (
+          <View style={styles.syncBannerSuccess}>
+            <Check size={14} color="#059669" strokeWidth={2.5} />
+            <Text style={styles.syncBannerText}>{syncBanner}</Text>
+          </View>
+        ) : isOffline ? (
+          <View style={styles.offlineBanner}>
+            <WifiOff size={13} color="#C2410C" strokeWidth={2.4} />
+            <Text style={styles.offlineBannerText}>
+              Modo Offline{pendingSyncCount > 0 ? ` • ${pendingSyncCount} corrida(s) salva(s) no celular` : ' • GPS ativo'}
+            </Text>
+          </View>
+        ) : pendingSyncCount > 0 ? (
+          <TouchableOpacity onPress={triggerSync} style={styles.syncingBanner} activeOpacity={0.8}>
+            <RefreshCw size={13} color="#0284C7" strokeWidth={2.2} />
+            <Text style={styles.syncingBannerText}>
+              {isSyncing ? 'Sincronizando com o servidor...' : `${pendingSyncCount} corrida(s) no celular • Toque para enviar`}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+
+        {/* Main Tab Screen View */}
+        <View style={styles.mainContent}>
+          {currentTab === 'home' && (
+            <HomeScreen
+              profile={profile}
+              activeChallenge={activeChallenge}
+              participantRecord={myParticipantRecord}
+              lastActivity={lastActivity}
+              activities={activities}
+              rankingPosition={myRankingPosition}
+              onStartRun={handleStartRun}
+              onViewChallengeDetails={(ch) => setSelectedChallenge(ch)}
+              onViewRanking={() => setCurrentTab('ranking')}
+            />
+          )}
+
+          {currentTab === 'challenges' && (
+            <ChallengesScreen
+              challenges={challenges}
+              participants={participants}
+              onSelectChallenge={(ch) => setSelectedChallenge(ch)}
+            />
+          )}
+
+          {currentTab === 'activity' && (
+            <ActivityHistoryScreen
+              activities={activities}
+              onDeleteActivity={handleDeleteActivity}
+              onSavePhoto={(actId, photoUri) => handleSaveActivityPhoto(actId, photoUri)}
+            />
+          )}
+
+          {currentTab === 'ranking' && (
+            <RankingScreen
+              participants={participants}
+              currentProfile={profile}
+              challenges={challenges}
+              selectedChallengeId={activeChallenge?.id}
+            />
+          )}
+
+          {currentTab === 'profile' && (
+            <ProfileScreen
+              profile={profile}
+              achievements={achievements}
+              userAchievements={userAchievements}
+              participants={participants}
+              onSignOut={() => supabase.auth.signOut()}
+              onUpdateProfile={handleUpdateProfile}
+            />
+          )}
         </View>
-      ) : isOffline ? (
-        <View style={styles.offlineBanner}>
-          <WifiOff size={13} color="#C2410C" strokeWidth={2.4} />
-          <Text style={styles.offlineBannerText}>
-            Modo Offline{pendingSyncCount > 0 ? ` • ${pendingSyncCount} corrida(s) salva(s) no celular` : ' • GPS ativo'}
-          </Text>
-        </View>
-      ) : pendingSyncCount > 0 ? (
-        <TouchableOpacity onPress={triggerSync} style={styles.syncingBanner} activeOpacity={0.8}>
-          <RefreshCw size={13} color="#0284C7" strokeWidth={2.2} />
-          <Text style={styles.syncingBannerText}>
-            {isSyncing ? 'Sincronizando com o servidor...' : `${pendingSyncCount} corrida(s) no celular • Toque para enviar`}
-          </Text>
-        </TouchableOpacity>
-      ) : null}
 
-      {/* Main Tab Screen View */}
-      <View style={styles.mainContent}>
-        {currentTab === 'home' && (
-          <HomeScreen
-            profile={profile}
-            activeChallenge={activeChallenge}
-            participantRecord={myParticipantRecord}
-            lastActivity={lastActivity}
-            activities={activities}
-            rankingPosition={myRankingPosition}
-            onStartRun={handleStartRun}
-            onViewChallengeDetails={(ch) => setSelectedChallenge(ch)}
-            onViewRanking={() => setCurrentTab('ranking')}
-          />
-        )}
-
-        {currentTab === 'challenges' && (
-          <ChallengesScreen
-            challenges={challenges}
-            participants={participants}
-            onSelectChallenge={(ch) => setSelectedChallenge(ch)}
-          />
-        )}
-
-        {currentTab === 'activity' && (
-          <ActivityHistoryScreen
-            activities={activities}
-            onDeleteActivity={handleDeleteActivity}
-            onSavePhoto={(actId, photoUri) => handleSaveActivityPhoto(actId, photoUri)}
-          />
-        )}
-
-        {currentTab === 'ranking' && (
-          <RankingScreen
-            participants={participants}
-            currentProfile={profile}
-            challenges={challenges}
-            selectedChallengeId={activeChallenge?.id}
-          />
-        )}
-
-        {currentTab === 'profile' && (
-          <ProfileScreen
-            profile={profile}
-            achievements={achievements}
-            userAchievements={userAchievements}
-            participants={participants}
-            onSignOut={() => supabase.auth.signOut()}
-            onUpdateProfile={handleUpdateProfile}
-          />
-        )}
-      </View>
-
-      {/* Bottom Navigation with 5 tabs and outline icons */}
-      <BottomNavBar
-        currentTab={currentTab}
-        onSelectTab={setCurrentTab}
-      />
-    </SafeAreaView>
+        {/* Bottom Navigation with 5 tabs and outline icons */}
+        <BottomNavBar
+          currentTab={currentTab}
+          onSelectTab={setCurrentTab}
+        />
+      </SafeAreaView>
+    </AnimatedSplashScreen>
   );
 }
 

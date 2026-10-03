@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image } from 'react-native';
-import { Trophy, CheckCircle, Calendar, ArrowRight, Award, Flame, Users } from 'lucide-react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, StatusBar, Platform } from 'react-native';
+import { Trophy, CheckCircle, Calendar, ArrowRight, Award, Flame, Users, Sparkles } from 'lucide-react-native';
 import { theme } from '../theme';
 import { ProgressBar } from '../components/ProgressBar';
 import { Challenge, ChallengeParticipant } from '@corro-por-amor/shared';
@@ -40,52 +40,84 @@ export const ChallengesScreen: React.FC<ChallengesScreenProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.pageSubtitle}>DESAFIOS OFICIAIS</Text>
-        <Text style={styles.pageTitle}>Desafios Virtuais</Text>
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.palette.blue1} />
+
+      {/* 1. Immersive Deep Navy Curved Hero Header */}
+      <View style={styles.heroHeader}>
+        <View style={styles.decorCircleTopRight} />
+        <View style={styles.decorCircleBottomLeft} />
+
+        <View style={styles.tagPill}>
+          <Sparkles size={11} color={theme.colors.palette.blue9} strokeWidth={2.4} />
+          <Text style={styles.tagPillText}>CIRCUITO & MEDALHAS VIRTUAIS</Text>
+        </View>
+
+        <Text style={styles.heroTitle}>Desafios Virtuais</Text>
+        <Text style={styles.heroSubtitle}>
+          Supere distâncias, conquiste medalhas reais e registre seu nome no mural dos campeões.
+        </Text>
+
+        {/* Summary Metric Strip */}
+        <View style={styles.summaryStrip}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{myChallenges.length}</Text>
+            <Text style={styles.summaryLabel}>Em Andamento</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{availableChallenges.length}</Text>
+            <Text style={styles.summaryLabel}>Disponíveis</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{completedChallenges.length}</Text>
+            <Text style={styles.summaryLabel}>Concluídos</Text>
+          </View>
+        </View>
       </View>
 
-      {/* Modern Filter Pills (Reference "Popular Exercise" tabs) */}
-      <View style={styles.filterPillsContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-          <TouchableOpacity
-            onPress={() => setFilter('my')}
-            style={[styles.filterPill, filter === 'my' && styles.filterPillActive]}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.filterPillText, filter === 'my' && styles.filterPillTextActive]}>
-              Em Andamento ({myChallenges.length})
-            </Text>
-          </TouchableOpacity>
+      {/* 2. Curved White Content Sheet */}
+      <View style={styles.curvedContentSheet}>
+        {/* Modern Filter Pills */}
+        <View style={styles.filterPillsContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+            <TouchableOpacity
+              onPress={() => setFilter('my')}
+              style={[styles.filterPill, filter === 'my' && styles.filterPillActive]}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.filterPillText, filter === 'my' && styles.filterPillTextActive]}>
+                Em Andamento ({myChallenges.length})
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => setFilter('available')}
-            style={[styles.filterPill, filter === 'available' && styles.filterPillActive]}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.filterPillText, filter === 'available' && styles.filterPillTextActive]}>
-              Disponíveis ({availableChallenges.length})
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setFilter('available')}
+              style={[styles.filterPill, filter === 'available' && styles.filterPillActive]}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.filterPillText, filter === 'available' && styles.filterPillTextActive]}>
+                Disponíveis ({availableChallenges.length})
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => setFilter('completed')}
-            style={[styles.filterPill, filter === 'completed' && styles.filterPillActive]}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.filterPillText, filter === 'completed' && styles.filterPillTextActive]}>
-              Concluídos ({completedChallenges.length})
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
+            <TouchableOpacity
+              onPress={() => setFilter('completed')}
+              style={[styles.filterPill, filter === 'completed' && styles.filterPillActive]}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.filterPillText, filter === 'completed' && styles.filterPillTextActive]}>
+                Concluídos ({completedChallenges.length})
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
 
-      {/* Challenges List */}
-      <ScrollView 
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      >
+        {/* Challenges List */}
+        <ScrollView 
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        >
         {currentList.length === 0 ? (
           <View style={styles.emptyState}>
             <View style={styles.emptyIconCircle}>
@@ -204,6 +236,7 @@ export const ChallengesScreen: React.FC<ChallengesScreenProps> = ({
           })
         )}
       </ScrollView>
+      </View>
     </View>
   );
 };
@@ -211,25 +244,111 @@ export const ChallengesScreen: React.FC<ChallengesScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.palette.blue1,
   },
-  header: {
+
+  // 1. Immersive Deep Navy Curved Hero Header
+  heroHeader: {
+    backgroundColor: theme.colors.palette.blue1,
+    paddingTop: Platform.OS === 'ios' ? 44 : 26,
     paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 6,
+    paddingBottom: 32,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  pageSubtitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: theme.colors.textSecondary,
+  decorCircleTopRight: {
+    position: 'absolute',
+    top: -40,
+    right: -40,
+    width: 170,
+    height: 170,
+    borderRadius: 85,
+    backgroundColor: theme.colors.palette.blue2,
+    opacity: 0.5,
+  },
+  decorCircleBottomLeft: {
+    position: 'absolute',
+    bottom: -30,
+    left: -40,
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    backgroundColor: theme.colors.palette.blue3,
+    opacity: 0.35,
+  },
+  tagPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(1, 79, 134, 0.5)',
+    borderWidth: 1,
+    borderColor: 'rgba(137, 194, 217, 0.25)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  tagPillText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: theme.colors.palette.blue9,
     letterSpacing: 0.8,
   },
-  pageTitle: {
-    fontSize: 24,
+  heroTitle: {
+    fontSize: 26,
     fontWeight: '900',
-    color: theme.colors.primaryDark,
+    color: theme.colors.white,
     letterSpacing: -0.5,
+    marginBottom: 4,
+  },
+  heroSubtitle: {
+    fontSize: 12,
+    color: theme.colors.palette.blue9,
+    lineHeight: 17,
+    fontWeight: '500',
+    marginBottom: 16,
+  },
+  summaryStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(1, 42, 74, 0.65)',
+    borderWidth: 1,
+    borderColor: 'rgba(137, 194, 217, 0.2)',
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  summaryItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  summaryValue: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: theme.colors.white,
+  },
+  summaryLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: theme.colors.palette.blue9,
     marginTop: 2,
+  },
+  summaryDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: 'rgba(137, 194, 217, 0.2)',
+  },
+
+  // 2. Curved Content Sheet
+  curvedContentSheet: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -16,
+    paddingTop: 14,
   },
   filterPillsContainer: {
     paddingVertical: 10,
@@ -262,7 +381,7 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 20,
     paddingTop: 8,
-    paddingBottom: 110, // Clears floating dock
+    paddingBottom: 135, // Clears floating dock
     gap: 16,
   },
   challengeCard: {

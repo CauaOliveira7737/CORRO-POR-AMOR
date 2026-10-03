@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image } from 'react-native';
-import { 
-  Play, 
-  Flame, 
-  Award, 
-  ChevronRight, 
-  Clock, 
-  MapPin, 
-  BarChart2, 
-  Zap, 
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, StatusBar, Platform } from 'react-native';
+import {
+  Play,
+  Flame,
+  Award,
+  ChevronRight,
+  Clock,
+  MapPin,
+  BarChart2,
+  Zap,
   TrendingUp,
   Calendar,
   Sparkles,
@@ -93,51 +93,72 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     return Math.max(20, Math.round((d.dayKm / maxDayKm) * 100));
   });
 
+
+
   return (
-    <ScrollView 
-      style={styles.container} 
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* 1. Top Greeting Header with Brand Logo */}
-      <View style={styles.topHeader}>
-        <View style={styles.headerLeft}>
-          <View style={styles.brandRow}>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.palette.blue1} />
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* 1. Immersive Deep Navy Curved Hero Header */}
+        <View style={styles.heroHeader}>
+          {/* Subtle Decorative Geometric Circles */}
+          <View style={styles.decorCircleTopRight} />
+          <View style={styles.decorCircleBottomLeft} />
+
+          {/* Top Bar: Official White Logo + Athlete Badges */}
+          <View style={styles.heroTopBar}>
             <Image
-              source={require('../../assets/symbol-navy.png')}
-              style={styles.headerBrandSymbol}
+              source={require('../../assets/logo.png')}
+              style={styles.heroBrandLogo}
               resizeMode="contain"
             />
-            <Text style={styles.brandNameTitle}>CORRO POR AMOR</Text>
+            <View style={styles.heroRightBadges}>
+              <View style={styles.xpBadge}>
+                <Flame size={14} color="#FF5722" strokeWidth={2.4} />
+                <Text style={styles.xpText}>{totalXp} XP</Text>
+              </View>
+              <View style={styles.avatarCircle}>
+                <Text style={styles.avatarText}>{athleteName.charAt(0).toUpperCase()}</Text>
+              </View>
+            </View>
           </View>
-          <Text style={styles.greetingTitle}>Olá, {athleteName} 👋</Text>
+
+          {/* Greeting & Motivation */}
+          <View style={styles.heroGreetingBox}>
+            <View style={styles.clubPill}>
+              <Sparkles size={11} color={theme.colors.palette.blue9} strokeWidth={2.4} />
+              <Text style={styles.clubPillText}>CLUBE DE CORRIDA & DESAFIOS</Text>
+            </View>
+            <Text style={styles.heroGreetingTitle}>Olá, {athleteName}</Text>
+            <Text style={styles.heroGreetingMotivation}>
+              {thisWeekRunsCount > 0
+                ? `Você completou ${thisWeekRunsCount} treino${thisWeekRunsCount > 1 ? 's' : ''} esta semana. Continue acelerando!`
+                : 'Pronto para calçar o tênis e conquistar seus km hoje?'}
+            </Text>
+          </View>
         </View>
 
-        <View style={styles.headerRight}>
-          <View style={styles.xpBadge}>
-            <Flame size={15} color={theme.colors.accentEnergy} strokeWidth={2.4} />
-            <Text style={styles.xpText}>{totalXp} XP</Text>
-          </View>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarText}>{athleteName.charAt(0).toUpperCase()}</Text>
-          </View>
-        </View>
-      </View>
+        {/* 2. Curved Content Sheet */}
+        <View style={styles.curvedContentSheet}>
 
       {/* 2. Horizontal Weekly Activity Strip with REAL dates and runs */}
       <View style={styles.weekStripContainer}>
         <View style={styles.weekHeader}>
           <Text style={styles.sectionTitle}>SEMANA DE TREINOS</Text>
           <Text style={styles.weekSubtitle}>
-            {thisWeekRunsCount === 0 
-              ? 'Nenhum treino nesta semana' 
+            {thisWeekRunsCount === 0
+              ? 'Nenhum treino nesta semana'
               : `${thisWeekRunsCount} treino${thisWeekRunsCount > 1 ? 's' : ''} concluído${thisWeekRunsCount > 1 ? 's' : ''}`}
           </Text>
         </View>
         <View style={styles.daysRow}>
           {weekDays.map((item, idx) => (
-            <View 
-              key={idx} 
+            <View
+              key={idx}
               style={[
                 styles.dayPill,
                 item.active && styles.dayPillActive
@@ -177,13 +198,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 {completedKm.toFixed(1)} <Text style={styles.distanceTarget}>/ {targetKm} km</Text>
               </Text>
               <Text style={styles.remainingSubtitle}>
-                {percentage >= 100 
-                  ? '✓ Meta atingida com sucesso!' 
+                {percentage >= 100
+                  ? '✓ Meta atingida com sucesso!'
                   : `Faltam ${remainingKm.toFixed(1)} km para concluir`}
               </Text>
             </View>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => onViewChallengeDetails(activeChallenge)}
               style={styles.detailsPillButton}
               activeOpacity={0.8}
@@ -215,7 +236,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </View>
       )}
 
-      {/* 4. Giant Hero Button: INICIAR CORRIDA (Reference Screen 6 & 7 "Start Now") */}
+      {/* 4. Giant Hero Button: INICIAR CORRIDA */}
       <TouchableOpacity
         onPress={onStartRun}
         style={styles.giantCtaButton}
@@ -225,13 +246,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       >
         <View style={styles.giantCtaInner}>
           <View style={styles.playIconCircle}>
-            <Play size={20} color={theme.colors.primaryDark} fill={theme.colors.primaryDark} />
+            <Play size={22} color={theme.colors.accentEnergy} fill={theme.colors.accentEnergy} style={{ marginLeft: 3 }} />
           </View>
           <View style={styles.ctaTextContainer}>
+            <View style={styles.ctaGpsRow}>
+              <View style={styles.gpsDotPulse} />
+              <Text style={styles.ctaGpsText}>GPS ATIVO & PRONTO</Text>
+            </View>
             <Text style={styles.giantCtaTitle}>INICIAR CORRIDA</Text>
-            <Text style={styles.giantCtaSubtitle}>GPS Ativo • Detecção Automática</Text>
+            <Text style={styles.giantCtaSubtitle}>Toque para registrar seu treino com precisão</Text>
           </View>
-          <ChevronRight size={20} color={theme.colors.white} strokeWidth={2.4} />
+          <View style={styles.ctaArrowCircle}>
+            <ChevronRight size={18} color={theme.colors.white} strokeWidth={2.8} />
+          </View>
         </View>
       </TouchableOpacity>
 
@@ -303,12 +330,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         <View style={styles.barsRow}>
           {sparklineBars.map((h, i) => (
             <View key={i} style={styles.barColumn}>
-              <View 
+              <View
                 style={[
-                  styles.barFill, 
-                  { height: `${h}%` }, 
+                  styles.barFill,
+                  { height: `${h}%` },
                   weekDays[i].hasRun && styles.barHighlight
-                ]} 
+                ]}
               />
               <Text style={[styles.barLabel, weekDays[i].active && { color: '#38BDF8', fontWeight: '700' }]}>
                 {weekDays[i].day}
@@ -344,7 +371,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </View>
 
         {/* Ranking Position Card */}
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={onViewRanking}
           style={styles.splitCard}
           activeOpacity={0.8}
@@ -364,61 +391,62 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </View>
         </TouchableOpacity>
       </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.palette.blue1,
   },
-  content: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 110, // Generous padding to clear the floating pill dock
-    gap: 20,
+  scrollContent: {
+    flexGrow: 1,
+    backgroundColor: theme.colors.palette.blue1,
   },
 
-  // 1. Top Header
-  topHeader: {
+  // 1. Immersive Deep Navy Curved Hero Header
+  heroHeader: {
+    backgroundColor: theme.colors.palette.blue1,
+    paddingTop: Platform.OS === 'ios' ? 44 : 28,
+    paddingHorizontal: 20,
+    paddingBottom: 36,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  decorCircleTopRight: {
+    position: 'absolute',
+    top: -40,
+    right: -40,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: theme.colors.palette.blue2,
+    opacity: 0.5,
+  },
+  decorCircleBottomLeft: {
+    position: 'absolute',
+    bottom: -30,
+    left: -40,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: theme.colors.palette.blue3,
+    opacity: 0.35,
+  },
+  heroTopBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 6,
+    marginBottom: 20,
   },
-  headerLeft: {
-    gap: 3,
+  heroBrandLogo: {
+    width: 86,
+    height: 44,
   },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    marginBottom: 2,
-  },
-  headerBrandSymbol: {
-    width: 26,
-    height: 26,
-  },
-  brandNameTitle: {
-    fontSize: 15,
-    fontWeight: '900',
-    color: theme.colors.palette.blue1,
-    letterSpacing: 0.6,
-  },
-  greetingSubtitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: theme.colors.textSecondary,
-    letterSpacing: 0.8,
-  },
-  greetingTitle: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: theme.colors.primaryDark,
-    letterSpacing: -0.5,
-  },
-  headerRight: {
+  heroRightBadges: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
@@ -427,35 +455,80 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#FFF7ED',
+    backgroundColor: 'rgba(255, 87, 34, 0.15)',
     borderWidth: 1,
-    borderColor: '#FED7AA',
+    borderColor: 'rgba(255, 87, 34, 0.4)',
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: theme.radius.full,
   },
   xpText: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#C2410C',
+    color: '#FF8A65',
   },
   avatarCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: theme.colors.primaryDark,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: theme.colors.palette.blue2,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    ...theme.shadows.card,
+    borderWidth: 1.5,
+    borderColor: theme.colors.palette.blue9,
   },
   avatarText: {
     color: theme.colors.white,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
   },
+  heroGreetingBox: {
+    gap: 4,
+  },
+  clubPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(1, 79, 134, 0.5)',
+    borderWidth: 1,
+    borderColor: 'rgba(137, 194, 217, 0.25)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+  },
+  clubPillText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: theme.colors.palette.blue9,
+    letterSpacing: 0.8,
+  },
+  heroGreetingTitle: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: theme.colors.white,
+    letterSpacing: -0.5,
+  },
+  heroGreetingMotivation: {
+    fontSize: 13,
+    color: theme.colors.palette.blue9,
+    fontWeight: '500',
+    lineHeight: 18,
+  },
 
+  // 2. Curved Content Sheet
+  curvedContentSheet: {
+    backgroundColor: theme.colors.background,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -16,
+    paddingTop: 20,
+    paddingHorizontal: 18,
+    paddingBottom: 135,
+    gap: 18,
+    minHeight: 500,
+  },
   // 2. Week Strip
   weekStripContainer: {
     backgroundColor: theme.colors.cardBackground,
@@ -635,13 +708,19 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 
-  // 4. Giant Hero Button
+  // 4. Giant Hero Button: INICIAR CORRIDA (Vibrant Energy Orange)
   giantCtaButton: {
-    backgroundColor: theme.colors.primaryDark,
-    borderRadius: theme.radius.xl,
+    backgroundColor: theme.colors.accentEnergy, // #FF5722
+    borderRadius: 22,
     paddingVertical: 18,
-    paddingHorizontal: 20,
-    ...theme.shadows.floating,
+    paddingHorizontal: 18,
+    shadowColor: theme.colors.accentEnergy,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 9,
+    borderWidth: 1.5,
+    borderColor: '#FFA07A',
   },
   giantCtaInner: {
     flexDirection: 'row',
@@ -649,28 +728,60 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   playIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: theme.colors.white,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 4,
   },
   ctaTextContainer: {
     flex: 1,
+    gap: 2,
+  },
+  ctaGpsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+  },
+  gpsDotPulse: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: '#4ADE80',
+  },
+  ctaGpsText: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: '#FFE4D6',
+    letterSpacing: 0.8,
   },
   giantCtaTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '900',
     color: theme.colors.white,
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
   },
   giantCtaSubtitle: {
     fontSize: 12,
-    fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.75)',
-    marginTop: 2,
+    fontWeight: '600',
+    color: '#FFE0B2',
+  },
+  ctaArrowCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
   },
 
   // 5. Metrics Grid

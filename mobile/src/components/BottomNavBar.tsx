@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, Trophy, Activity, BarChart2, User } from 'lucide-react-native';
 import { theme } from '../theme';
 
@@ -14,20 +15,49 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   currentTab,
   onSelectTab,
 }) => {
+  const insets = useSafeAreaInsets();
+  // Dynamically calculate bottom offset so it floats safely above Android 3-button bar or iOS home bar
+  const safeBottom = Math.max(insets.bottom, Platform.OS === 'ios' ? 14 : 10) + 8;
+
   const tabs = [
     { id: 'home' as MobileTab, label: 'Início', icon: Home },
     { id: 'challenges' as MobileTab, label: 'Desafios', icon: Trophy },
-    { id: 'activity' as MobileTab, label: 'Atividade', icon: Activity },
+    { id: 'activity' as MobileTab, label: 'Treinar', icon: Activity, isCenter: true },
     { id: 'ranking' as MobileTab, label: 'Ranking', icon: BarChart2 },
     { id: 'profile' as MobileTab, label: 'Perfil', icon: User },
   ];
 
   return (
-    <View style={styles.wrapper} pointerEvents="box-none">
+    <View style={[styles.wrapper, { bottom: safeBottom }]} pointerEvents="box-none">
       <View style={styles.dock}>
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isSelected = currentTab === tab.id;
+
+          if (tab.isCenter) {
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                onPress={() => onSelectTab(tab.id)}
+                style={styles.centerTabButton}
+                activeOpacity={0.85}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: isSelected }}
+                accessibilityLabel={tab.label}
+              >
+                <View style={[styles.centerIconContainer, isSelected && styles.centerIconContainerActive]}>
+                  <Icon
+                    size={24}
+                    color={theme.colors.white}
+                    strokeWidth={2.8}
+                  />
+                </View>
+                <Text style={[styles.centerTabLabel, isSelected && styles.centerTabLabelActive]}>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          }
 
           return (
             <TouchableOpacity
@@ -65,10 +95,10 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
 const styles = StyleSheet.create({
   wrapper: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 18 : 12,
     left: 18,
     right: 18,
     alignItems: 'center',
+    zIndex: 999,
   },
   dock: {
     flexDirection: 'row',
@@ -117,5 +147,42 @@ const styles = StyleSheet.create({
   },
   tabLabelInactive: {
     color: '#8E9BAE',
+  },
+
+  // Elevated Center Button
+  centerTabButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -22,
+  },
+  centerIconContainer: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: theme.colors.accentEnergy,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3.5,
+    borderColor: theme.colors.dockBackground,
+    shadowColor: theme.colors.accentEnergy,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
+    elevation: 8,
+    marginBottom: 2,
+  },
+  centerIconContainerActive: {
+    backgroundColor: '#E64A19',
+    transform: [{ scale: 1.05 }],
+  },
+  centerTabLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#FED7AA',
+    letterSpacing: -0.1,
+  },
+  centerTabLabelActive: {
+    color: theme.colors.white,
   },
 });

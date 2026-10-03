@@ -189,7 +189,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
           {/* Official Logo (White on Navy, Zero Box/Card) */}
           <View style={styles.logoWrapper}>
             <Image
-              source={require('../../assets/logo-white.png')}
+              source={require('../../assets/logo.png')}
               style={styles.logoImage}
               resizeMode="contain"
             />
@@ -433,8 +433,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   logoWrapper: {
-    width: 320,
-    height: 190,
+    width: 286,
+    height: 200,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
