@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, StatusBar, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, StatusBar, ActivityIndicator, Text, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
 import { WifiOff, RefreshCw, Check } from 'lucide-react-native';
 import { theme } from './src/theme';
 import { supabase } from './src/api/supabase';
 import { offlineStorage, PendingActivity } from './src/services/offlineStorage';
+import { notificationService } from './src/services/notificationService';
 import { BottomNavBar, MobileTab } from './src/components/BottomNavBar';
 import { AnimatedSplashScreen } from './src/components/AnimatedSplashScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
@@ -182,6 +183,11 @@ function MainApp() {
           achievements: achData || undefined,
           userAchievements: freshUserAch,
         });
+
+        // Sync local notifications (morning reminder + remaining km in challenge)
+        const myActivePart = partData?.find((p) => p.athlete_id === effectiveUserId && p.completion_percentage < 100) || null;
+        const myActChallenge = chData?.find((c) => c.id === myActivePart?.challenge_id) || null;
+        notificationService.syncReminders(myActChallenge, myActivePart).catch(() => {});
       } else {
         setProfile(null);
         setActivities([]);
@@ -469,6 +475,44 @@ function MainApp() {
     }
   };
 
+  // Delete Account Handler
+  const handleDeleteAccount = async () => {
+    if (!profile?.id) return;
+    try {
+      setLoading(true);
+      const userId = profile.id;
+
+      // 1. Delete user's achievements
+      await supabase.from('athlete_achievements').delete().eq('athlete_id', userId);
+
+      // 2. Delete user's activities
+      await supabase.from('activities').delete().eq('athlete_id', userId);
+
+      // 3. Delete user's challenge participants
+      await supabase.from('challenge_participants').delete().eq('athlete_id', userId);
+
+      // 4. Delete user's profile row
+      await supabase.from('profiles').delete().eq('id', userId);
+
+      // 5. Clear offline cache and cancel local notifications
+      await offlineStorage.clearAll();
+      await notificationService.cancelAll();
+
+      // 6. Sign out from Supabase Auth
+      await supabase.auth.signOut();
+      setSession(null);
+      setProfile(null);
+      setActivities([]);
+      setUserAchievements([]);
+      Alert.alert('Conta Excluída', 'Sua conta e todos os dados associados foram excluídos com sucesso.');
+    } catch (err: any) {
+      console.error('Error deleting account:', err);
+      Alert.alert('Erro ao excluir conta', err.message || 'Não foi possível excluir sua conta no momento.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Join Challenge Handler
   const handleJoinChallenge = async (ch: Challenge, chosenTargetKm?: number) => {
     if (profile?.id) {
@@ -658,7 +702,9 @@ function MainApp() {
               achievements={achievements}
               userAchievements={userAchievements}
               participants={participants}
+              activeChallenge={activeChallenge}
               onSignOut={() => supabase.auth.signOut()}
+              onDeleteAccount={handleDeleteAccount}
               onUpdateProfile={handleUpdateProfile}
             />
           )}

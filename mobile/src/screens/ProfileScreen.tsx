@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Switch, Modal, TextInput, ActivityIndicator, Image, StatusBar, Platform } from 'react-native';
 import { 
   User, 
@@ -10,27 +10,26 @@ import {
   ChevronRight, 
   LogOut, 
   Bell, 
-  Shield, 
-  Download, 
   HelpCircle,
-  Smartphone,
-  Share2,
-  Lock,
   Edit3,
   X,
   Check,
-  Sparkles
+  Sparkles,
+  Trash2
 } from 'lucide-react-native';
 import { theme } from '../theme';
 import { ProgressBar } from '../components/ProgressBar';
-import { Profile, Achievement, AthleteAchievement, ChallengeParticipant, APP_CONFIG } from '@corro-por-amor/shared';
+import { Profile, Achievement, AthleteAchievement, ChallengeParticipant, Challenge, APP_CONFIG } from '@corro-por-amor/shared';
+import { notificationService } from '../services/notificationService';
 
 interface ProfileScreenProps {
   profile: Profile | null;
   achievements: Achievement[];
   userAchievements: AthleteAchievement[];
   participants: ChallengeParticipant[];
+  activeChallenge?: Challenge | null;
   onSignOut?: () => void;
+  onDeleteAccount?: () => Promise<void>;
   onUpdateProfile?: (updates: Partial<Profile>) => Promise<void>;
 }
 
@@ -39,13 +38,38 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   achievements,
   userAchievements,
   participants,
+  activeChallenge,
   onSignOut,
+  onDeleteAccount,
   onUpdateProfile,
 }) => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editName, setEditName] = useState(profile?.name || '');
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    notificationService.isEnabled().then(setNotificationsEnabled);
+  }, []);
+
+  const handleToggleNotifications = async (val: boolean) => {
+    setNotificationsEnabled(val);
+    await notificationService.setEnabled(val);
+    if (val) {
+      const granted = await notificationService.requestPermissions();
+      if (!granted) {
+        Alert.alert(
+          'Permissão de Notificações',
+          'Ative as notificações nas configurações do seu celular para receber lembretes de corrida e avisos de quantos km faltam para a meta!'
+        );
+      } else {
+        const myPart = participants.find((p) => p.athlete_id === profile?.id && p.challenge_id === activeChallenge?.id) || null;
+        await notificationService.syncReminders(activeChallenge, myPart);
+      }
+    } else {
+      await notificationService.cancelAll();
+    }
+  };
 
   const currentLevel = profile?.level || 1;
   const currentXp = profile?.xp_total || 0;
@@ -172,7 +196,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </View>
       </View>
 
-      {/* 3. Settings & Preferences Menu Card (Reference Screen 2 Settings List) */}
+      {/* 3. Settings & Preferences Menu Card */}
       <View style={styles.menuGroupCard}>
         <Text style={styles.menuGroupTitle}>PREFERÊNCIAS & CONTA</Text>
 
@@ -183,60 +207,28 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </View>
           <View style={styles.menuItemTextWrap}>
             <Text style={styles.menuItemTitle}>Notificações de Treino</Text>
-            <Text style={styles.menuItemSubtitle}>Lembretes diários e alertas de ranking</Text>
+            <Text style={styles.menuItemSubtitle}>Lembretes diários e metas de km restantes</Text>
           </View>
           <Switch 
             value={notificationsEnabled}
-            onValueChange={setNotificationsEnabled}
+            onValueChange={handleToggleNotifications}
             trackColor={{ false: '#CBD5E1', true: theme.colors.brandBlue }}
             thumbColor={theme.colors.white}
           />
         </View>
 
-        {/* Connected Devices */}
-        <TouchableOpacity 
-          style={styles.menuItem}
-          activeOpacity={0.7}
-          onPress={() => Alert.alert('Dispositivos Conectados', 'Seu aplicativo utiliza rastreamento GPS de alta precisão nativo do seu smartphone.')}
-        >
-          <View style={[styles.menuIconWrap, { backgroundColor: '#FEF3C7' }]}>
-            <Smartphone size={18} color="#D97706" strokeWidth={2.2} />
-          </View>
-          <View style={styles.menuItemTextWrap}>
-            <Text style={styles.menuItemTitle}>Dispositivos & Sensores</Text>
-            <Text style={styles.menuItemSubtitle}>GPS de Alta Precisão ativo</Text>
-          </View>
-          <ChevronRight size={18} color={theme.colors.textMutedSoft} />
-        </TouchableOpacity>
-
-        {/* Privacy & Anti-fraud */}
-        <TouchableOpacity 
-          style={styles.menuItem}
-          activeOpacity={0.7}
-          onPress={() => Alert.alert('Segurança e Telemetria', 'O motor físico anti-fraude analisa ritmo, paradas e acelerações para garantir a justiça no ranking.')}
-        >
-          <View style={[styles.menuIconWrap, { backgroundColor: '#ECFDF5' }]}>
-            <Shield size={18} color="#059669" strokeWidth={2.2} />
-          </View>
-          <View style={styles.menuItemTextWrap}>
-            <Text style={styles.menuItemTitle}>Segurança & Validação</Text>
-            <Text style={styles.menuItemSubtitle}>Algoritmo de telemetria ativo</Text>
-          </View>
-          <ChevronRight size={18} color={theme.colors.textMutedSoft} />
-        </TouchableOpacity>
-
         {/* Support & Feedback */}
         <TouchableOpacity 
           style={[styles.menuItem, { borderBottomWidth: 0 }]}
           activeOpacity={0.7}
-          onPress={() => Alert.alert('Suporte', 'Precisa de ajuda com medalhas ou desafios? Envie um e-mail para suporte@corroporamor.com')}
+          onPress={() => Alert.alert('Suporte & Ajuda', 'Precisa de suporte com medalhas, inscrições ou corridas? Envie um e-mail para suporte@corroporamor.com')}
         >
           <View style={[styles.menuIconWrap, { backgroundColor: '#F1F5F9' }]}>
             <HelpCircle size={18} color={theme.colors.primaryDark} strokeWidth={2.2} />
           </View>
           <View style={styles.menuItemTextWrap}>
             <Text style={styles.menuItemTitle}>Ajuda & Regulamento</Text>
-            <Text style={styles.menuItemSubtitle}>Dúvidas sobre medalhas e regras</Text>
+            <Text style={styles.menuItemSubtitle}>Dúvidas sobre medalhas, regras e suporte</Text>
           </View>
           <ChevronRight size={18} color={theme.colors.textMutedSoft} />
         </TouchableOpacity>
@@ -331,6 +323,44 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         >
           <LogOut size={16} color="#DC2626" strokeWidth={2.2} />
           <Text style={styles.signOutText}>Sair da Conta</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Delete Account (Danger Zone) */}
+      {onDeleteAccount && (
+        <TouchableOpacity 
+          onPress={() => {
+            Alert.alert(
+              'Excluir Conta Permanentemente',
+              'Atenção: Esta ação é definitiva e irreversível. Todos os seus treinos registrados, histórico de quilometragem e medalhas serão apagados permanentemente dos nossos servidores.',
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                  text: 'Continuar Exclusão',
+                  style: 'destructive',
+                  onPress: () => {
+                    Alert.alert(
+                      'Confirmação Final',
+                      'Tem certeza absoluta de que deseja apagar sua conta? Você não poderá recuperar seus dados.',
+                      [
+                        { text: 'Voltar', style: 'cancel' },
+                        {
+                          text: 'Excluir Definitivamente',
+                          style: 'destructive',
+                          onPress: onDeleteAccount,
+                        },
+                      ]
+                    );
+                  },
+                },
+              ]
+            );
+          }} 
+          style={styles.deleteAccountButton}
+          activeOpacity={0.8}
+        >
+          <Trash2 size={16} color="#EF4444" strokeWidth={2.2} />
+          <Text style={styles.deleteAccountText}>Excluir Minha Conta</Text>
         </TouchableOpacity>
       )}
 
@@ -746,6 +776,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     color: '#DC2626',
+  },
+  deleteAccountButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: theme.radius.xl,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    marginTop: 10,
+  },
+  deleteAccountText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#EF4444',
   },
 
   // Modal

@@ -203,4 +203,16 @@ export const offlineStorage = {
 
     return { syncedCount, errors };
   },
+
+  /**
+   * Clears all cached offline data
+   */
+  async clearAll(): Promise<void> {
+    try {
+      const keys = Object.values(KEYS);
+      await AsyncStorage.multiRemove(keys);
+    } catch (err) {
+      console.warn('Error clearing offline storage:', err);
+    }
+  },
 };
