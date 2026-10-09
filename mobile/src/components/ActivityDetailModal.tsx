@@ -36,6 +36,7 @@ import {
 import { theme } from '../theme';
 import { Activity, RunPoint, formatDuration, calculateAverageSpeedKmh } from '@corro-por-amor/shared';
 import { RunPhotoShareModal } from './RunPhotoShareModal';
+import { RouteThumbnail } from './RouteThumbnail';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -323,13 +324,13 @@ export const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({
                 <Text style={styles.metricCardValue}>{activity.average_pace}</Text>
               </View>
 
-              {/* Velocidade Média */}
+              {/* Precisão GPS */}
               <View style={styles.metricCard}>
                 <View style={styles.metricCardIcon}>
-                  <Gauge size={16} color="#F97316" />
+                  <MapPin size={16} color="#F97316" />
                 </View>
-                <Text style={styles.metricCardLabel}>VELOCIDADE MÉDIA</Text>
-                <Text style={styles.metricCardValue}>{avgSpeed} km/h</Text>
+                <Text style={styles.metricCardLabel}>PRECISÃO DO TRAJETO</Text>
+                <Text style={styles.metricCardValue}>{routePoints.length > 0 ? `${routePoints.length} pts` : 'GPS Ativo'}</Text>
               </View>
 
               {/* Calorias Estimadas */}
@@ -363,13 +364,23 @@ export const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({
                   rotateEnabled={false}
                 >
 
+                  {/* Glow Casing (Waze/Strava) */}
                   <Polyline
                     coordinates={routePoints}
-                    strokeColor="#FF5500"
-                    strokeWidth={5}
+                    strokeColor="rgba(255, 87, 34, 0.32)"
+                    strokeWidth={10}
                     lineCap="round"
                     lineJoin="round"
                     zIndex={10}
+                  />
+                  {/* Neon Core */}
+                  <Polyline
+                    coordinates={routePoints}
+                    strokeColor="#FF5722"
+                    strokeWidth={5}
+                    lineCap="round"
+                    lineJoin="round"
+                    zIndex={11}
                   />
 
                   {/* Start Point */}
@@ -404,13 +415,24 @@ export const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({
                 </MapView>
               ) : (
                 <View style={styles.noMapPlaceholder}>
-                  <MapPin size={28} color="#64748B" strokeWidth={1.8} />
-                  <Text style={styles.noMapTitle}>Trajeto Registrado</Text>
-                  <Text style={styles.noMapSubtitle}>
-                    {routePoints.length > 0 
-                      ? 'Mapa renderizado nativamente no celular.' 
-                      : 'Esta atividade foi sincronizada com a distância e ritmo oficiais.'}
-                  </Text>
+                  {routePoints.length > 1 ? (
+                    <RouteThumbnail
+                      coordinates={routePoints}
+                      width={240}
+                      height={140}
+                      strokeColor="#FF5722"
+                      strokeWidth={3.5}
+                      glow={true}
+                    />
+                  ) : (
+                    <>
+                      <MapPin size={28} color="#64748B" strokeWidth={1.8} />
+                      <Text style={styles.noMapTitle}>Trajeto Registrado</Text>
+                      <Text style={styles.noMapSubtitle}>
+                        Esta atividade foi sincronizada com a distância e ritmo oficiais.
+                      </Text>
+                    </>
+                  )}
                 </View>
               )}
             </View>

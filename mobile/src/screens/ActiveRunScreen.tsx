@@ -18,7 +18,7 @@ import {
   Zap, 
   Clock, 
   LocateFixed, 
-  Gauge
+  Flame
 } from 'lucide-react-native';
 import { theme } from '../theme';
 import { ConfirmationModal } from '../components/ConfirmationModal';
@@ -119,16 +119,28 @@ export const ActiveRunScreen: React.FC<ActiveRunScreenProps> = ({
           mapType="standard"
         >
 
-          {/* Real-time Route Polyline in Energetic Orange */}
+          {/* Real-time Route Polyline in Energetic Orange (Dual-Layer Waze/Strava Style) */}
           {tracker.routePoints.length > 1 && (
-            <Polyline
-              coordinates={tracker.routePoints}
-              strokeColor="#FF5500"
-              strokeWidth={5}
-              lineCap="round"
-              lineJoin="round"
-              zIndex={10}
-            />
+            <>
+              {/* Outer Translucent Glow / Casing */}
+              <Polyline
+                coordinates={tracker.routePoints}
+                strokeColor="rgba(255, 87, 34, 0.32)"
+                strokeWidth={10}
+                lineCap="round"
+                lineJoin="round"
+                zIndex={10}
+              />
+              {/* Inner High-Visibility Core */}
+              <Polyline
+                coordinates={tracker.routePoints}
+                strokeColor="#FF5722"
+                strokeWidth={5}
+                lineCap="round"
+                lineJoin="round"
+                zIndex={11}
+              />
+            </>
           )}
 
           {/* Start Point Marker */}
@@ -143,6 +155,7 @@ export const ActiveRunScreen: React.FC<ActiveRunScreenProps> = ({
               zIndex={20}
             >
               <View style={styles.startMarker}>
+                <View style={styles.startMarkerPulse} />
                 <View style={styles.startMarkerInner} />
               </View>
             </Marker>
@@ -264,7 +277,7 @@ export const ActiveRunScreen: React.FC<ActiveRunScreenProps> = ({
             <View style={styles.metricItem}>
               <View style={styles.metricLabelRow}>
                 <Zap size={12} color="#38BDF8" />
-                <Text style={styles.metricLabel}>RITMO</Text>
+                <Text style={styles.metricLabel}>RITMO MÉDIO</Text>
               </View>
               <Text style={styles.metricValue}>
                 {tracker.averagePace}
@@ -275,11 +288,11 @@ export const ActiveRunScreen: React.FC<ActiveRunScreenProps> = ({
 
             <View style={styles.metricItem}>
               <View style={styles.metricLabelRow}>
-                <Gauge size={12} color="#F97316" />
-                <Text style={styles.metricLabel}>VELOCIDADE</Text>
+                <Flame size={12} color="#F97316" />
+                <Text style={styles.metricLabel}>CALORIAS</Text>
               </View>
               <Text style={styles.metricValue}>
-                {tracker.currentSpeedKmh > 0 ? `${tracker.currentSpeedKmh.toFixed(1)} km/h` : '0.0 km/h'}
+                {Math.round(tracker.distanceKm * 65)} kcal
               </Text>
             </View>
           </View>
@@ -351,20 +364,30 @@ const styles = StyleSheet.create({
 
   // Map Markers
   startMarker: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: 'rgba(16, 185, 129, 0.35)',
+    width: 26,
+    height: 26,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  startMarkerPulse: {
+    position: 'absolute',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(16, 185, 129, 0.35)',
+  },
   startMarkerInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     backgroundColor: '#10B981',
-    borderWidth: 2,
+    borderWidth: 2.5,
     borderColor: '#FFFFFF',
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 4,
   },
 
   // Top Bar

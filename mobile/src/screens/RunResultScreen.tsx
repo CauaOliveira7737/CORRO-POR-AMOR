@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image } from 'react-native';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CheckCircle2, Flame, Award, ChevronRight, Share2, Clock, Zap, MapPin, Camera, Sparkles } from 'lucide-react-native';
+import MapView, { Polyline, Marker } from 'react-native-maps';
+import { CheckCircle2, Flame, Award, ChevronRight, Share2, Clock, Zap, MapPin, Camera, Sparkles, Flag } from 'lucide-react-native';
 import { theme } from '../theme';
 import { ProgressBar } from '../components/ProgressBar';
 import { RunPhotoShareModal } from '../components/RunPhotoShareModal';
@@ -38,10 +39,54 @@ export const RunResultScreen: React.FC<RunResultScreenProps> = ({
 }) => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [attachedPhotoUri, setAttachedPhotoUri] = useState<string | null>(null);
+  const mapRef = useRef<MapView | null>(null);
 
   const currentKm = participant ? participant.completed_km : distanceKm;
   const targetKm = participant?.target_km || challenge?.target_km || 50;
   const percentage = participant ? participant.completion_percentage : (currentKm / targetKm) * 100;
+
+  const initialRegion = useMemo(() => {
+    if (routeCoordinates.length === 0) {
+      return {
+        latitude: -15.7975,
+        longitude: -47.8919,
+        latitudeDelta: 0.015,
+        longitudeDelta: 0.015,
+      };
+    }
+    let minLat = routeCoordinates[0].latitude;
+    let maxLat = routeCoordinates[0].latitude;
+    let minLng = routeCoordinates[0].longitude;
+    let maxLng = routeCoordinates[0].longitude;
+    for (const pt of routeCoordinates) {
+      if (pt.latitude < minLat) minLat = pt.latitude;
+      if (pt.latitude > maxLat) maxLat = pt.latitude;
+      if (pt.longitude < minLng) minLng = pt.longitude;
+      if (pt.longitude > maxLng) maxLng = pt.longitude;
+    }
+    const centerLat = (minLat + maxLat) / 2;
+    const centerLng = (minLng + maxLng) / 2;
+    const latDelta = Math.max((maxLat - minLat) * 1.45, 0.006);
+    const lngDelta = Math.max((maxLng - minLng) * 1.45, 0.006);
+    return {
+      latitude: centerLat,
+      longitude: centerLng,
+      latitudeDelta: latDelta,
+      longitudeDelta: lngDelta,
+    };
+  }, [routeCoordinates]);
+
+  useEffect(() => {
+    if (routeCoordinates.length > 1 && mapRef.current) {
+      const timer = setTimeout(() => {
+        mapRef.current?.fitToCoordinates(routeCoordinates, {
+          edgePadding: { top: 35, right: 35, bottom: 35, left: 35 },
+          animated: false,
+        });
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [routeCoordinates]);
 
   const handlePhotoSaved = async (photoUri: string) => {
     setAttachedPhotoUri(photoUri);
@@ -51,7 +96,7 @@ export const RunResultScreen: React.FC<RunResultScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Celebration Header */}
         <View style={styles.header}>
@@ -157,6 +202,81 @@ export const RunResultScreen: React.FC<RunResultScreenProps> = ({
           </View>
         )}
 
+        {/* Real GPS Route Map (Waze/Strava Style) */}
+        {routeCoordinates && routeCoordinates.length > 1 && Platform.OS !== 'web' && (
+          <View style={styles.card}>
+            <View style={styles.mapSectionHeader}>
+              <View style={styles.mapSectionTitleRow}>
+                <MapPin size={16} color="#FF5722" strokeWidth={2.4} />
+                <Text style={styles.mapSectionTitle}>PERCURSO DA CORRIDA</Text>
+              </View>
+              <Text style={styles.mapSectionSubtitle}>{routeCoordinates.length} pontos de GPS</Text>
+            </View>
+
+            <View style={styles.mapFrame}>
+              <MapView
+                ref={mapRef}
+                style={StyleSheet.absoluteFill}
+                initialRegion={initialRegion}
+                mapType="standard"
+                scrollEnabled={false}
+                zoomEnabled={true}
+                pitchEnabled={false}
+                rotateEnabled={false}
+              >
+                {/* Glow Casing (Waze/Strava) */}
+                <Polyline
+                  coordinates={routeCoordinates}
+                  strokeColor="rgba(255, 87, 34, 0.32)"
+                  strokeWidth={10}
+                  lineCap="round"
+                  lineJoin="round"
+                  zIndex={10}
+                />
+                {/* Neon Core */}
+                <Polyline
+                  coordinates={routeCoordinates}
+                  strokeColor="#FF5722"
+                  strokeWidth={5}
+                  lineCap="round"
+                  lineJoin="round"
+                  zIndex={11}
+                />
+
+                {/* Start Marker */}
+                <Marker
+                  coordinate={{
+                    latitude: routeCoordinates[0].latitude,
+                    longitude: routeCoordinates[0].longitude,
+                  }}
+                  title="Ponto de Partida"
+                  anchor={{ x: 0.5, y: 0.5 }}
+                  zIndex={20}
+                >
+                  <View style={styles.mapStartMarker}>
+                    <View style={styles.mapStartMarkerInner} />
+                  </View>
+                </Marker>
+
+                {/* Finish Marker */}
+                <Marker
+                  coordinate={{
+                    latitude: routeCoordinates[routeCoordinates.length - 1].latitude,
+                    longitude: routeCoordinates[routeCoordinates.length - 1].longitude,
+                  }}
+                  title="Ponto de Chegada"
+                  anchor={{ x: 0.5, y: 0.5 }}
+                  zIndex={25}
+                >
+                  <View style={styles.mapFinishMarker}>
+                    <Flag size={11} color="#FFFFFF" strokeWidth={2.4} />
+                  </View>
+                </Marker>
+              </MapView>
+            </View>
+          </View>
+        )}
+
         {/* Photo Share Card (Strava style) */}
         <TouchableOpacity
           onPress={() => setShowShareModal(true)}
@@ -234,7 +354,7 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     gap: 18,
-    paddingBottom: 40,
+    paddingBottom: Platform.OS === 'android' ? 72 : 44,
   },
   header: {
     alignItems: 'center',
@@ -380,6 +500,7 @@ const styles = StyleSheet.create({
   actionsContainer: {
     gap: 12,
     marginTop: 6,
+    paddingBottom: Platform.OS === 'android' ? 24 : 12,
   },
   shareButton: {
     flexDirection: 'row',
@@ -489,5 +610,61 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 0.4,
+  },
+
+  // Route GPS Map
+  mapSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: -4,
+  },
+  mapSectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  mapSectionTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: theme.colors.primaryDark,
+    letterSpacing: 0.6,
+  },
+  mapSectionSubtitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: theme.colors.textSecondary,
+  },
+  mapFrame: {
+    height: 220,
+    borderRadius: theme.radius.lg,
+    overflow: 'hidden',
+    backgroundColor: '#E2E8F0',
+  },
+  mapStartMarker: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(16, 185, 129, 0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mapStartMarkerInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#10B981',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  mapFinishMarker: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#EF4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
 });

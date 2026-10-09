@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Profile, Challenge, ChallengeParticipant, Activity, Achievement, AthleteAchievement } from '@corro-por-amor/shared';
+import { photoStorage } from './photoStorage';
 
 const KEYS = {
   PROFILE: '@cpa_cached_profile',
@@ -165,14 +166,35 @@ export const offlineStorage = {
       return { syncedCount: 0, errors: [] };
     }
 
+    // 1. Verify active authenticated user session before syncing
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.id) {
+      // Defer sync until the user has logged in and has an active auth session
+      return { syncedCount: 0, errors: [] };
+    }
+
+    const currentUserId = session.user.id;
     let syncedCount = 0;
     const errors: any[] = [];
 
     for (const act of pending) {
       try {
+        // Ensure athlete_id matches the authenticated user to satisfy RLS (auth.uid() = athlete_id)
+        const targetAthleteId = currentUserId;
+
+        // Upload local photo to Supabase storage if needed
+        let finalPhotoUrl = act.photo_url || null;
+        if (finalPhotoUrl && !finalPhotoUrl.startsWith('http')) {
+          try {
+            finalPhotoUrl = await photoStorage.uploadActivityPhoto(targetAthleteId, finalPhotoUrl);
+          } catch (pErr) {
+            console.warn('Could not upload offline photo during sync, keeping original:', pErr);
+          }
+        }
+
         const { error } = await supabase.from('activities').insert([
           {
-            athlete_id: act.athlete_id,
+            athlete_id: targetAthleteId,
             challenge_id: act.challenge_id,
             distance_km: act.distance_km,
             moving_seconds: act.moving_seconds,
@@ -182,15 +204,21 @@ export const offlineStorage = {
             status: act.status,
             rejection_reason: act.rejection_reason,
             xp_earned: act.xp_earned,
-            photo_url: act.photo_url || null,
+            photo_url: finalPhotoUrl,
             route_geojson: act.route_geojson || null,
             created_at: act.created_at,
           },
         ]);
 
         if (error) {
-          console.error('Error syncing activity:', act.id, error);
-          errors.push(error);
+          // If the error is an unrecoverable RLS mismatch (42501) or foreign key constraint (23503), remove the stale activity
+          if (error.code === '42501' || error.code === '23503') {
+            console.warn(`Removing invalid pending activity ${act.id} (${error.code}):`, error.message);
+            await this.removePendingActivity(act.id);
+          } else {
+            console.error('Error syncing activity:', act.id, error);
+            errors.push(error);
+          }
         } else {
           await this.removePendingActivity(act.id);
           syncedCount++;

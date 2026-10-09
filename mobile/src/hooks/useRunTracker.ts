@@ -40,6 +40,8 @@ export function useRunTracker() {
   const [hasGpsPermission, setHasGpsPermission] = useState<boolean>(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
 
+  const statusRef = useRef<RunStatus>('idle');
+  const distanceKmRef = useRef<number>(0);
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
   const lastPointRef = useRef<RunPoint | null>(null);
   const stoppedSinceRef = useRef<number | null>(null);
@@ -138,13 +140,15 @@ export function useRunTracker() {
     setCurrentLocation(newPoint);
     setIsGpsAcquired(true);
 
-    // Filter points with poor horizontal accuracy for route tracking & distance accumulation
-    if (accuracy && accuracy > APP_CONFIG.gps.maxAccuracyMeters) {
+    // Filter points with very poor horizontal accuracy (worse than 50m) to avoid GPS drift jumps
+    if (accuracy && accuracy > 50) {
       return;
     }
 
+    const currentRunStatus = statusRef.current;
+
     // If currently RUNNING:
-    if (status === 'running') {
+    if (currentRunStatus === 'running') {
       // 1. Accumulate distance if previous point exists
       if (lastPointRef.current) {
         const segKm = calculateHaversineDistance(
@@ -153,13 +157,19 @@ export function useRunTracker() {
           latitude,
           longitude
         );
-        // Sanity check on segment distance (ignore absurd teleport jumps > 500m in 1-2s)
-        if (segKm < 0.5) {
-          setDistanceKm((prev) => Number((prev + segKm).toFixed(3)));
+        // Minimum movement threshold: ignore micro-jitter below 2 meters (0.002 km)
+        // Maximum jump sanity check: ignore teleport jumps > 500m in 1s (0.5 km)
+        if (segKm >= 0.002 && segKm < 0.5) {
+          distanceKmRef.current = Number((distanceKmRef.current + segKm).toFixed(3));
+          setDistanceKm(distanceKmRef.current);
+          lastPointRef.current = newPoint;
+          setRoutePoints((prev) => [...prev, newPoint]);
         }
+      } else {
+        // First recorded point of the run
+        lastPointRef.current = newPoint;
+        setRoutePoints([newPoint]);
       }
-      lastPointRef.current = newPoint;
-      setRoutePoints((prev) => [...prev, newPoint]);
 
       // 2. Auto-pause check: is athlete stationary?
       if (currentSpeedMs < APP_CONFIG.gps.stationarySpeedThresholdMs) {
@@ -170,6 +180,7 @@ export function useRunTracker() {
           const stoppedDurationSec = (now - stoppedSinceRef.current) / 1000;
           if (stoppedDurationSec >= APP_CONFIG.gps.autoPauseSeconds) {
             // Trigger Auto-Pause!
+            statusRef.current = 'paused';
             setStatus('paused');
             setPauseReason('auto');
             showNotice('Corrida pausada automaticamente.\nVocê ficou parado por mais de 1 minuto.');
@@ -183,12 +194,13 @@ export function useRunTracker() {
     }
 
     // If currently PAUSED (Auto or Manual):
-    else if (status === 'paused') {
+    else if (currentRunStatus === 'paused') {
       // Auto-resume check: has athlete resumed moving consistently?
       if (currentSpeedMs >= APP_CONFIG.gps.movingSpeedThresholdMs) {
         movingConsecutiveSamplesRef.current += 1;
         if (movingConsecutiveSamplesRef.current >= APP_CONFIG.gps.movingDebounceSamples) {
           // Trigger Auto-Resume!
+          statusRef.current = 'running';
           setStatus('running');
           setPauseReason(null);
           showNotice('▶ Corrida retomada', 3000);
@@ -200,7 +212,7 @@ export function useRunTracker() {
         movingConsecutiveSamplesRef.current = 0;
       }
     }
-  }, [status]);
+  }, []);
 
   // Start Location GPS Watcher
   const startTracking = async () => {
@@ -208,6 +220,7 @@ export function useRunTracker() {
     if (!ok) return;
 
     // Reset run values
+    distanceKmRef.current = 0;
     setDistanceKm(0);
     setMovingSeconds(0);
     setPausedSeconds(0);
@@ -215,6 +228,7 @@ export function useRunTracker() {
     lastPointRef.current = null;
     stoppedSinceRef.current = null;
     movingConsecutiveSamplesRef.current = 0;
+    statusRef.current = 'running';
     setStatus('running');
     setPauseReason(null);
 
@@ -233,15 +247,23 @@ export function useRunTracker() {
         };
         setCurrentLocation(pt);
         setIsGpsAcquired(true);
+        if (statusRef.current === 'running' && !lastPointRef.current) {
+          lastPointRef.current = pt;
+          setRoutePoints([pt]);
+        }
       }
     }).catch((e) => {
       console.warn('Instant GPS acquisition note:', e);
     });
 
     try {
+      if (locationSubscriptionRef.current) {
+        locationSubscriptionRef.current.remove();
+        locationSubscriptionRef.current = null;
+      }
       const sub = await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.High,
+          accuracy: Location.Accuracy.BestForNavigation,
           timeInterval: 1000,
           distanceInterval: 1, // update every meter
         },
@@ -255,7 +277,8 @@ export function useRunTracker() {
 
   // Pause Manual
   const pauseManual = () => {
-    if (status === 'running') {
+    if (statusRef.current === 'running') {
+      statusRef.current = 'paused';
       setStatus('paused');
       setPauseReason('manual');
       stoppedSinceRef.current = null;
@@ -264,7 +287,8 @@ export function useRunTracker() {
 
   // Resume Manual
   const resumeManual = () => {
-    if (status === 'paused') {
+    if (statusRef.current === 'paused') {
+      statusRef.current = 'running';
       setStatus('running');
       setPauseReason(null);
       stoppedSinceRef.current = null;
@@ -279,6 +303,7 @@ export function useRunTracker() {
       locationSubscriptionRef.current.remove();
       locationSubscriptionRef.current = null;
     }
+    statusRef.current = 'finished';
     setStatus('finished');
   };
 
@@ -288,8 +313,10 @@ export function useRunTracker() {
       locationSubscriptionRef.current.remove();
       locationSubscriptionRef.current = null;
     }
+    statusRef.current = 'idle';
     setStatus('idle');
     setPauseReason(null);
+    distanceKmRef.current = 0;
     setDistanceKm(0);
     setMovingSeconds(0);
     setPausedSeconds(0);

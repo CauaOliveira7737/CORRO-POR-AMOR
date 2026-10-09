@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, StatusBar, ActivityIndicator, Text, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, StyleSheet, StatusBar, ActivityIndicator, Text, TouchableOpacity, Alert, AppState, AppStateStatus } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
 import { WifiOff, RefreshCw, Check } from 'lucide-react-native';
@@ -63,18 +63,30 @@ function MainApp() {
 
   const tracker = useRunTracker();
 
-  // Auto-sync function
+  // Auto-sync function (validates and uploads offline runs automatically)
   const triggerSync = async () => {
     if (isSyncing) return;
     try {
+      const net = await NetInfo.fetch();
+      if (net.isConnected === false) return;
+
+      const pending = await offlineStorage.getPendingActivities();
+      if (pending.length === 0) {
+        setPendingSyncCount(0);
+        return;
+      }
+
       setIsSyncing(true);
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!currentSession?.user?.id) {
+        // Auth session not ready or user logged out; defer
+        return;
+      }
       const res = await offlineStorage.syncPendingActivities(supabase);
       if (res.syncedCount > 0) {
-        setSyncBanner(`✓ ${res.syncedCount} treino(s) offline sincronizado(s) com sucesso!`);
+        setSyncBanner(`✓ ${res.syncedCount} treino(s) validado(s) e sincronizado(s)!`);
         setTimeout(() => setSyncBanner(null), 4000);
-        if (profile?.id) {
-          await loadData(profile.id);
-        }
+        await loadData(currentSession.user.id);
       }
       const remaining = await offlineStorage.getPendingActivities();
       setPendingSyncCount(remaining.length);
@@ -91,10 +103,10 @@ function MainApp() {
       setLoading(true);
 
       const net = await NetInfo.fetch();
-      const online = Boolean(net.isConnected && net.isInternetReachable !== false);
-      setIsOffline(!online);
+      const isDeviceOffline = net.isConnected === false;
+      setIsOffline(isDeviceOffline);
 
-      if (!online) {
+      if (isDeviceOffline) {
         // Offline: Read from local cache
         const cached = await offlineStorage.getCachedAppData();
         if (cached.challenges.length > 0) setChallenges(cached.challenges);
@@ -210,26 +222,42 @@ function MainApp() {
   };
 
   useEffect(() => {
-    // 1. Initial network check
+    // 1. Initial network check and automatic sync attempt
     NetInfo.fetch().then((state) => {
-      const offline = state.isConnected === false || state.isInternetReachable === false;
-      setIsOffline(offline);
-    });
-
-    // 2. Network listener for auto-sync
-    const unsubscribeNet = NetInfo.addEventListener((state) => {
-      const offline = state.isConnected === false || state.isInternetReachable === false;
+      const offline = state.isConnected === false;
       setIsOffline(offline);
       if (!offline) {
         triggerSync();
       }
     });
 
-    // 3. Auth session listener
+    // 2. Network listener for auto-sync whenever internet connects
+    const unsubscribeNet = NetInfo.addEventListener((state) => {
+      const offline = state.isConnected === false;
+      setIsOffline(offline);
+      if (!offline) {
+        triggerSync();
+      }
+    });
+
+    // 3. AppState listener: auto-sync whenever app returns to foreground
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        NetInfo.fetch().then((state) => {
+          if (state.isConnected !== false) {
+            triggerSync();
+          }
+        });
+      }
+    };
+    const appStateSub = AppState.addEventListener('change', handleAppStateChange);
+
+    // 4. Auth session listener
     supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
       setSession(currentSession);
       if (currentSession?.user?.id) {
         loadData(currentSession.user.id);
+        triggerSync();
       } else {
         // Check if there is cached profile for offline startup
         const cached = await offlineStorage.getCachedAppData();
@@ -247,6 +275,7 @@ function MainApp() {
       setSession(newSession);
       if (newSession?.user?.id) {
         loadData(newSession.user.id);
+        triggerSync();
       } else {
         setProfile(null);
         setActivities([]);
@@ -257,9 +286,21 @@ function MainApp() {
 
     return () => {
       unsubscribeNet();
+      appStateSub.remove();
       subscription.unsubscribe();
     };
   }, []);
+
+  // 5. Periodic auto-sync every 20 seconds while offline queue has items and device is online
+  useEffect(() => {
+    if (pendingSyncCount === 0 || isOffline) return;
+
+    const timer = setInterval(() => {
+      triggerSync();
+    }, 20000);
+
+    return () => clearInterval(timer);
+  }, [pendingSyncCount, isOffline]);
 
   // Determine Active Challenge
   const activeChallenge = challenges.find((c) => c.status === 'active') || challenges[0] || null;
@@ -295,12 +336,57 @@ function MainApp() {
       points: tracker.routePoints,
     } : null;
 
-    let savedLocally = false;
+    // 1. Instant transition to RunResultScreen (0ms latency, zero lag)
+    setLastFinishedRun({
+      activityId: null,
+      distanceKm: distance,
+      movingSeconds: movingSecs,
+      pausedSeconds: pausedSecs,
+      averagePace: pace,
+      xpEarned: xpBase,
+      isFlagged: !validation.isApproved,
+      isOffline: false,
+      routeCoordinates: [...tracker.routePoints],
+    });
 
-    // Save to Supabase or Offline Queue
-    if (profile?.id) {
-      if (isOffline) {
-        // Offline: save to pending queue
+    // 2. Perform database save and sync in background without blocking the UI transition
+    (async () => {
+      if (!profile?.id) return;
+
+      let createdActivityId: string | null = null;
+
+      try {
+        const { data: insertedAct, error } = await supabase.from('activities').insert([
+          {
+            athlete_id: profile.id,
+            challenge_id: activeChallenge ? activeChallenge.id : null,
+            distance_km: distance,
+            moving_seconds: movingSecs,
+            paused_seconds: pausedSecs,
+            average_pace: pace,
+            source: 'gps',
+            status: validation.status,
+            rejection_reason: validation.reason || null,
+            xp_earned: xpBase,
+            route_geojson: routePayload,
+          },
+        ]).select('id').single();
+
+        if (error) throw error;
+        if (insertedAct?.id) {
+          createdActivityId = insertedAct.id;
+        }
+        setIsOffline(false);
+
+        setLastFinishedRun((prev) => prev ? {
+          ...prev,
+          activityId: createdActivityId,
+          isOffline: false,
+        } : null);
+
+        await loadData(profile.id);
+      } catch (err: any) {
+        console.warn('Network error saving activity, saving to offline queue:', err);
         const offlineAct: PendingActivity = {
           id: 'offline-' + Date.now(),
           athlete_id: profile.id,
@@ -316,11 +402,10 @@ function MainApp() {
           route_geojson: routePayload,
           created_at: new Date().toISOString(),
         };
+        createdActivityId = offlineAct.id;
         await offlineStorage.savePendingActivity(offlineAct);
         setPendingSyncCount((prev) => prev + 1);
-        savedLocally = true;
 
-        // Immediately update local profile and activities so athlete sees them
         setProfile((prev) => prev ? {
           ...prev,
           total_distance_km: (prev.total_distance_km || 0) + distance,
@@ -343,74 +428,19 @@ function MainApp() {
             return p;
           }));
         }
-      } else {
-        let createdActivityId: string | null = null;
-        try {
-          const { data: insertedAct, error } = await supabase.from('activities').insert([
-            {
-              athlete_id: profile.id,
-              challenge_id: activeChallenge ? activeChallenge.id : null,
-              distance_km: distance,
-              moving_seconds: movingSecs,
-              paused_seconds: pausedSecs,
-              average_pace: pace,
-              source: 'gps',
-              status: validation.status,
-              rejection_reason: validation.reason || null,
-              xp_earned: xpBase,
-              route_geojson: routePayload,
-            },
-          ]).select('id').single();
 
-          if (error) throw error;
-          if (insertedAct?.id) {
-            createdActivityId = insertedAct.id;
-          }
-          await loadData(profile.id);
-        } catch (err) {
-          console.warn('Network error saving activity, saving to offline queue:', err);
-          const offlineAct: PendingActivity = {
-            id: 'offline-' + Date.now(),
-            athlete_id: profile.id,
-            challenge_id: activeChallenge ? activeChallenge.id : null,
-            distance_km: distance,
-            moving_seconds: movingSecs,
-            paused_seconds: pausedSecs,
-            average_pace: pace,
-            source: 'gps',
-            status: validation.status,
-            rejection_reason: validation.reason || null,
-            xp_earned: xpBase,
-            route_geojson: routePayload,
-            created_at: new Date().toISOString(),
-          };
-          createdActivityId = offlineAct.id;
-          await offlineStorage.savePendingActivity(offlineAct);
-          setPendingSyncCount((prev) => prev + 1);
-          savedLocally = true;
-
-          setProfile((prev) => prev ? {
-            ...prev,
-            total_distance_km: (prev.total_distance_km || 0) + distance,
-            xp_total: (prev.xp_total || 0) + xpBase,
-          } : null);
-
-          setActivities((prev) => [offlineAct as any, ...prev]);
-        }
-
-        setLastFinishedRun({
+        setLastFinishedRun((prev) => prev ? {
+          ...prev,
           activityId: createdActivityId,
-          distanceKm: distance,
-          movingSeconds: movingSecs,
-          pausedSeconds: pausedSecs,
-          averagePace: pace,
-          xpEarned: xpBase,
-          isFlagged: !validation.isApproved,
-          isOffline: savedLocally,
-          routeCoordinates: tracker.routePoints,
-        });
+          isOffline: true,
+        } : null);
+
+        // Schedule an automatic background sync retry shortly after offline queuing
+        setTimeout(() => {
+          triggerSync();
+        }, 4000);
       }
-    }
+    })().catch((e) => console.error('Background run save error:', e));
   };
 
   // Save Photo to Activity Handler
@@ -445,19 +475,33 @@ function MainApp() {
   // Delete Activity Handler
   const handleDeleteActivity = async (activityId: string) => {
     try {
+      // 1. Always purge from offline pending queue if present
+      await offlineStorage.removePendingActivity(activityId);
+      setPendingSyncCount((prev) => Math.max(0, prev - 1));
+
+      // 2. If it's a local-only offline activity, remove and return
       if (activityId.startsWith('offline-')) {
-        await offlineStorage.removePendingActivity(activityId);
         setActivities((prev) => prev.filter((a) => a.id !== activityId));
-        setPendingSyncCount((prev) => Math.max(0, prev - 1));
         return;
       }
-      const { error } = await supabase.from('activities').delete().eq('id', activityId);
+
+      // 3. Delete from Supabase with verification
+      let query = supabase.from('activities').delete().eq('id', activityId);
+      if (profile?.id) {
+        query = query.eq('athlete_id', profile.id);
+      }
+      const { error } = await query;
       if (error) throw error;
+      
+      // 4. Optimistically remove activity from UI list immediately
+      setActivities((prev) => prev.filter((a) => a.id !== activityId));
+
       if (profile?.id) {
         await loadData(profile.id);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error deleting activity:', err);
+      Alert.alert('Erro ao excluir', err?.message || 'Não foi possível excluir a atividade.');
       throw err;
     }
   };
@@ -646,13 +690,13 @@ function MainApp() {
               Modo Offline{pendingSyncCount > 0 ? ` • ${pendingSyncCount} corrida(s) salva(s) no celular` : ' • GPS ativo'}
             </Text>
           </View>
-        ) : pendingSyncCount > 0 ? (
-          <TouchableOpacity onPress={triggerSync} style={styles.syncingBanner} activeOpacity={0.8}>
-            <RefreshCw size={13} color="#0284C7" strokeWidth={2.2} />
+        ) : isSyncing ? (
+          <View style={styles.syncingBanner}>
+            <ActivityIndicator size="small" color="#0284C7" style={{ marginRight: 6 }} />
             <Text style={styles.syncingBannerText}>
-              {isSyncing ? 'Sincronizando com o servidor...' : `${pendingSyncCount} corrida(s) no celular • Toque para enviar`}
+              Validando e enviando {pendingSyncCount > 0 ? `${pendingSyncCount} ` : ''}treino(s) em segundo plano...
             </Text>
-          </TouchableOpacity>
+          </View>
         ) : null}
 
         {/* Main Tab Screen View */}

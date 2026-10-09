@@ -21,6 +21,7 @@ import { theme } from '../theme';
 import { Activity, RunPoint } from '@corro-por-amor/shared';
 import { RunPhotoShareModal } from '../components/RunPhotoShareModal';
 import { ActivityDetailModal } from '../components/ActivityDetailModal';
+import { RouteThumbnail, normalizeCoordinates } from '../components/RouteThumbnail';
 
 const extractRouteCoordinates = (geojson: any): RunPoint[] => {
   if (!geojson) return [];
@@ -73,6 +74,8 @@ export const ActivityHistoryScreen: React.FC<ActivityHistoryScreenProps> = ({
             setDeletingId(act.id);
             try {
               await onDeleteActivity(act.id);
+            } catch (err: any) {
+              Alert.alert('Erro ao excluir', err?.message || 'Não foi possível apagar esta atividade.');
             } finally {
               setDeletingId(null);
             }
@@ -162,13 +165,26 @@ export const ActivityHistoryScreen: React.FC<ActivityHistoryScreenProps> = ({
                 style={[styles.activityCard, deletingId === act.id && { opacity: 0.5 }]}
                 activeOpacity={0.88}
               >
-                {/* Left Column: Photo or Icon */}
+                {/* Left Column: Photo or GPS Route Silhouette or Icon */}
                 {act.photo_url ? (
                   <View style={styles.activityPhotoWrap}>
                     <Image source={{ uri: act.photo_url }} style={styles.activityPhotoImg} />
                     <View style={styles.cameraDot}>
                       <Camera size={8} color="#FFFFFF" strokeWidth={2.4} />
                     </View>
+                  </View>
+                ) : normalizeCoordinates(act.route_geojson).length > 1 ? (
+                  <View style={styles.activityRouteThumbWrap}>
+                    <RouteThumbnail
+                      coordinates={act.route_geojson}
+                      width={44}
+                      height={44}
+                      strokeColor="#FF5722"
+                      strokeWidth={2.5}
+                      padding={4}
+                      glow={true}
+                      showEndpoints={true}
+                    />
                   </View>
                 ) : (
                   <View style={styles.activityIconWrap}>
@@ -646,6 +662,17 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
     backgroundColor: '#0F172A',
+  },
+  activityRouteThumbWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: theme.radius.md,
+    backgroundColor: '#0F172A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 87, 34, 0.28)',
+    overflow: 'hidden',
   },
   activityPhotoImg: {
     width: '100%',

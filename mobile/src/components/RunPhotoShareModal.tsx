@@ -25,10 +25,12 @@ import {
   Sliders,
   Maximize2,
   Square,
-  Smartphone
+  Smartphone,
+  RotateCcw
 } from 'lucide-react-native';
 import { theme } from '../theme';
 import { RunPoint } from '@corro-por-amor/shared';
+import { RouteThumbnail, normalizeCoordinates } from './RouteThumbnail';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -169,38 +171,8 @@ export const RunPhotoShareModal: React.FC<RunPhotoShareModalProps> = ({
     return `${mins}min ${secs < 10 ? '0' : ''}${secs}s`;
   };
 
-  // Generate SVG path from actual GPS coordinates (normalized to 120x40 box)
-  const generateRouteSvgPath = () => {
-    if (!routeCoordinates || routeCoordinates.length < 2) {
-      // Default sleek runner elevation contour line if points are few
-      return 'M 5 28 Q 30 10, 60 22 T 115 12';
-    }
-
-    const lats = routeCoordinates.map((c) => c.latitude);
-    const lons = routeCoordinates.map((c) => c.longitude);
-    const minLat = Math.min(...lats);
-    const maxLat = Math.max(...lats);
-    const minLon = Math.min(...lons);
-    const maxLon = Math.max(...lons);
-
-    const latDelta = maxLat - minLat || 0.0001;
-    const lonDelta = maxLon - minLon || 0.0001;
-
-    const width = 110;
-    const height = 36;
-    const padding = 6;
-
-    const points = routeCoordinates.map((c) => {
-      const x = padding + ((c.longitude - minLon) / lonDelta) * (width - padding * 2);
-      const y = height - padding - ((c.latitude - minLat) / latDelta) * (height - padding * 2);
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    });
-
-    return `M ${points.join(' L ')}`;
-  };
-
-  // Default fallback runner demonstration photo if user hasn't selected yet
-  const displayImageUri = photoUri || 'https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=1080&q=80';
+  const normalizedCoords = normalizeCoordinates(routeCoordinates);
+  const hasRealRoute = normalizedCoords.length > 1;
 
   const cardWidth = Math.min(SCREEN_WIDTH - 48, 340);
   const cardHeight = aspectRatio === 'story' ? cardWidth * (16 / 9) : cardWidth;
@@ -213,7 +185,9 @@ export const RunPhotoShareModal: React.FC<RunPhotoShareModalProps> = ({
           <View style={styles.modalHeader}>
             <View>
               <Text style={styles.modalTitle}>Card de Compartilhamento</Text>
-              <Text style={styles.modalSubtitle}>Personalize sua foto com métricas</Text>
+              <Text style={styles.modalSubtitle}>
+                {photoUri ? 'Foto personalizada com traçado real' : 'Trajeto GPS Oficial • Estilo Strava Art'}
+              </Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButton} activeOpacity={0.7}>
               <X size={20} color={theme.colors.primaryDark} />
@@ -259,17 +233,39 @@ export const RunPhotoShareModal: React.FC<RunPhotoShareModalProps> = ({
                   { width: cardWidth, height: cardHeight }
                 ]}
               >
-                {/* Background Photo */}
-                <Image
-                  source={{ uri: displayImageUri }}
-                  style={StyleSheet.absoluteFill}
-                  resizeMode="cover"
-                />
+                {/* 1. Background Layer: User Photo OR Dark Carbon Strava Art with True Route */}
+                {photoUri ? (
+                  <>
+                    <Image
+                      source={{ uri: photoUri }}
+                      style={StyleSheet.absoluteFill}
+                      resizeMode="cover"
+                    />
+                    {/* Left soft shadow gradient overlay so white metrics are 100% readable */}
+                    <View style={styles.overlayShade} />
+                  </>
+                ) : (
+                  <View style={[StyleSheet.absoluteFill, styles.darkArtBackground]}>
+                    <View style={styles.darkArtGridLines} />
+                    {/* Hero Large Glowing Real Route Silhouette */}
+                    {hasRealRoute && (
+                      <View style={styles.heroRouteArtWrapper}>
+                        <RouteThumbnail
+                          coordinates={routeCoordinates}
+                          width={cardWidth - 36}
+                          height={aspectRatio === 'story' ? cardHeight * 0.46 : cardHeight * 0.50}
+                          strokeColor="#FF5722"
+                          strokeWidth={4.5}
+                          padding={14}
+                          glow={true}
+                          showEndpoints={true}
+                        />
+                      </View>
+                    )}
+                  </View>
+                )}
 
-                {/* Left Gradient / Dark Shade Overlay so white text is 100% readable */}
-                <View style={styles.overlayShade} />
-
-                {/* Content Overlay */}
+                {/* 2. Content Overlay */}
                 <View style={styles.cardContent}>
                   {/* Top Branding (Corro Por Amor) */}
                   <View style={styles.brandHeader}>
@@ -277,7 +273,7 @@ export const RunPhotoShareModal: React.FC<RunPhotoShareModalProps> = ({
                     <View style={styles.brandBar} />
                   </View>
 
-                  {/* Vertical Metric Display (Authentic Strava Layout from User Photo) */}
+                  {/* Vertical Metric Display (Authentic Strava Layout) */}
                   <View style={styles.metricsColumn}>
                     {showDistance && (
                       <View style={styles.metricBlock}>
@@ -306,19 +302,19 @@ export const RunPhotoShareModal: React.FC<RunPhotoShareModalProps> = ({
                       </View>
                     )}
 
-                    {/* GPS Route Sparkline Line */}
-                    {showRoute && (
+                    {/* Real Route Silhouette on User Photo (when toggled on photo mode) */}
+                    {showRoute && photoUri && hasRealRoute && (
                       <View style={styles.routeContainer}>
-                        <Svg width={120} height={40}>
-                          <Path
-                            d={generateRouteSvgPath()}
-                            fill="none"
-                            stroke="#FF5500"
-                            strokeWidth="3.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </Svg>
+                        <RouteThumbnail
+                          coordinates={routeCoordinates}
+                          width={130}
+                          height={55}
+                          strokeColor="#FF5722"
+                          strokeWidth={3.5}
+                          padding={4}
+                          glow={true}
+                          showEndpoints={true}
+                        />
                       </View>
                     )}
                   </View>
@@ -345,6 +341,17 @@ export const RunPhotoShareModal: React.FC<RunPhotoShareModalProps> = ({
                 <ImageIcon size={16} color={theme.colors.brandBlue} strokeWidth={2.2} />
                 <Text style={styles.photoButtonText}>Escolher Galeria</Text>
               </TouchableOpacity>
+
+              {photoUri && (
+                <TouchableOpacity
+                  onPress={() => setPhotoUri(null)}
+                  style={[styles.photoButton, styles.resetArtButton]}
+                  activeOpacity={0.8}
+                >
+                  <RotateCcw size={15} color="#EF4444" strokeWidth={2.2} />
+                  <Text style={[styles.photoButtonText, { color: '#EF4444' }]}>Tema Trajeto</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* Metric Customization Toggles */}
@@ -534,6 +541,23 @@ const styles = StyleSheet.create({
     // Radial/left soft shadow gradient effect
     backgroundColor: 'rgba(0, 0, 0, 0.32)',
   },
+  darkArtBackground: {
+    backgroundColor: '#090D16',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 87, 34, 0.2)',
+  },
+  darkArtGridLines: {
+    ...StyleSheet.absoluteFill,
+    opacity: 0.05,
+    borderWidth: 1,
+    borderColor: '#FFFFFF',
+  },
+  heroRouteArtWrapper: {
+    position: 'absolute',
+    right: 10,
+    bottom: 24,
+    opacity: 0.95,
+  },
   cardContent: {
     flex: 1,
     padding: 24,
@@ -593,7 +617,7 @@ const styles = StyleSheet.create({
   // Photo Action Buttons
   photoActionsRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
     width: '100%',
     justifyContent: 'center',
   },
@@ -602,15 +626,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 6,
     backgroundColor: 'rgba(1, 79, 134, 0.08)',
     paddingVertical: 12,
     borderRadius: theme.radius.lg,
     borderWidth: 1.5,
     borderColor: 'rgba(1, 79, 134, 0.2)',
   },
+  resetArtButton: {
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    borderColor: 'rgba(239, 68, 68, 0.25)',
+  },
   photoButtonText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
     color: theme.colors.brandBlue,
   },
